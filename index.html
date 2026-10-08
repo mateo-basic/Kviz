@@ -253,6 +253,7 @@ window.KVIZ_CONFIG = {
     messagingSenderId: "350597030844",
     appId: "1:350597030844:web:fb817ce2954ae11538c1b9"
   },
+  */
   joinBaseURL: ""   /* neobavezno: adresa stranice za QR kod, ako se razlikuje od adrese ove stranice */
 };
 </script>
@@ -578,9 +579,20 @@ const Host = {
     h.innerHTML = `<div class="table-wrap"><table class="t"><thead><tr><th>Kviz</th><th>Datum</th><th>Kod</th><th class="num">Natjecatelja</th><th>Stanje</th><th></th></tr></thead><tbody>
       ${list.map(r => `<tr><td><b>${esc(r.title)}</b></td><td>${fmtDate(r.createdAt)}</td><td class="mono">${r.code}</td><td class="num">${r.players || 0}</td>
         <td>${r.ended ? 'završen' : '<span style="color:var(--warn);font-weight:700">u tijeku</span>'}</td>
-        <td><button class="btn sm ${r.ended ? '' : 'go'}" data-code="${r.code}">${r.ended ? 'Rezultati' : 'Nastavi'}</button></td></tr>`).join('')}
+        <td style="display:flex;gap:6px;align-items:center"><button class="btn sm ${r.ended ? '' : 'go'}" data-code="${r.code}">${r.ended ? 'Rezultati' : 'Nastavi'}</button>
+          <button class="icon-btn" data-hdel="${r.code}" title="Obriši izvještaj" aria-label="Obriši izvještaj ${r.code}">${I.trash}</button></td></tr>`).join('')}
       </tbody></table></div>`;
-    h.onclick = e => { const b = e.target.closest('[data-code]'); if (b) Live.open(b.dataset.code); };
+    h.onclick = async e => {
+      const d = e.target.closest('[data-hdel]');
+      if (d) {
+        if (!d.dataset.c) { d.dataset.c = '1'; d.innerHTML = '<span style="font-size:.8rem;font-weight:700;color:var(--bad)">Potvrdi brisanje</span>'; setTimeout(() => { if (d.isConnected) { delete d.dataset.c; d.innerHTML = I.trash; } }, 4000); return; }
+        const c = d.dataset.hdel;
+        try { await DB.remove('games/' + c); await DB.remove('history/' + c); toast('Izvještaj obrisan'); }
+        catch (err) { toast('Brisanje nije uspjelo: ' + (err.message || ''), 5000); }
+        return;
+      }
+      const b = e.target.closest('[data-code]'); if (b) Live.open(b.dataset.code);
+    };
   }
 };
 
