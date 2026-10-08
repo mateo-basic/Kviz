@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Povratna veza</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: app shell with top bar; editor = left rail + work panel + sticky action bar; live = projector stage. */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --sunk:#e3e8f0; --line:#cdd5e1;
+  --ink:#141a2e; --ink-2:#4a5470; --ink-3:#7b849c;
+  --accent:#2747d4; --accent-ink:#ffffff; --accent-soft:#e1e7fd;
+  --ok:#1f8a4c; --ok-soft:#dcf2e5; --bad:#c92a2a; --bad-soft:#fbe1e1; --warn:#b5650d;
+  --a0:#e0502a; --a1:#1f72d6; --a2:#d39b06; --a3:#7a3fd1; --a4:#0f8c86; --a5:#c2387c;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --r:10px; --shadow:0 1px 2px rgba(20,26,46,.06), 0 6px 20px rgba(20,26,46,.07);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1322; --surface:#181e31; --sunk:#111627; --line:#2c3550;
+  --ink:#eef1f8; --ink-2:#b4bcd2; --ink-3:#7f89a5;
+  --accent:#7d95ff; --accent-ink:#0f1322; --accent-soft:#232d55;
+  --ok:#4cc882; --ok-soft:#173826; --bad:#ff7b7b; --bad-soft:#3d1d22; --warn:#f0a648;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f1322; --surface:#181e31; --sunk:#111627; --line:#2c3550;
+  --ink:#eef1f8; --ink-2:#b4bcd2; --ink-3:#7f89a5;
+  --accent:#7d95ff; --accent-ink:#0f1322; --accent-soft:#232d55;
+  --ok:#4cc882; --ok-soft:#173826; --bad:#ff7b7b; --bad-soft:#3d1d22; --warn:#f0a648;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25); color-scheme:dark }
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:1.9rem;font-weight:700} h2{font-size:1.35rem;font-weight:650} h3{font-size:1.05rem;font-weight:650}
+p{margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--ink-3)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45em;border:1.5px solid transparent;border-radius:999px;padding:.55em 1.2em;font-weight:700;cursor:pointer;background:var(--sunk);color:var(--ink);white-space:nowrap;transition:transform .08s, background .15s}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.go{background:var(--ok);color:#fff}
+.btn.ghost{background:transparent;border-color:var(--line)}
+.btn.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.sm{padding:.35em .85em;font-size:.88rem}
+.btn.lg{padding:.8em 1.8em;font-size:1.15rem}
+.icon-btn{border:0;background:transparent;padding:.35em;border-radius:8px;cursor:pointer;color:var(--ink-2);display:inline-grid;place-items:center}
+.icon-btn:hover{background:var(--sunk);color:var(--ink)}
+svg.i{width:1.15em;height:1.15em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:1rem;padding:.7rem 1.25rem;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--f-display);font-weight:750;font-size:1.15rem;cursor:pointer}
+.brand svg{width:30px;height:30px}
+.topbar .sp{flex:1}
+.mode-chip{font-size:.75rem;font-weight:700;padding:.2em .7em;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 60px}
+.field{display:grid;gap:.35rem}
+.field > span{font-size:.9rem;font-weight:700;color:var(--ink-2)}
+.field .req{color:var(--bad)}
+.input,textarea.input,select.input{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r);padding:.65em .8em;min-width:0}
+.input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+textarea.input{resize:vertical;min-height:6.5em}
+.count{font-size:.78rem;color:var(--ink-3);justify-self:end}
+.err{color:var(--bad);font-size:.9rem;font-weight:700}
+
+/* home */
+.home-head{display:flex;flex-wrap:wrap;gap:1rem;align-items:end;justify-content:space-between;margin-bottom:1.4rem}
+.grid-q{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.qcard .cover{aspect-ratio:16/9;background:var(--sunk);display:grid;place-items:center;overflow:hidden;max-width:100%}
+.qcard .cover img{width:100%;height:100%;object-fit:cover}
+.qcard .cover .ph{font-family:var(--f-display);font-weight:750;font-size:1.4rem;color:var(--ink-3);padding:1rem;text-align:center}
+.qcard .body{padding:14px 16px 16px;display:grid;gap:.6rem;flex:1}
+.qcard .meta{display:flex;gap:.8rem;font-size:.85rem;color:var(--ink-2)}
+.qcard .acts{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-top:auto}
+.section-gap{margin-top:2.6rem}
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+table.t{border-collapse:collapse;width:100%;font-size:.93rem}
+table.t th,table.t td{padding:.6em .9em;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t th{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:var(--sunk)}
+table.t td.num,table.t th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+table.t tr:last-child td{border-bottom:0}
+.empty{padding:2rem;text-align:center;color:var(--ink-2);background:var(--surface);border:1.5px dashed var(--line);border-radius:14px}
+
+/* editor */
+.editor{max-width:1240px;margin:0 auto;padding:20px 20px 0;display:grid;grid-template-columns:330px minmax(0,1fr);gap:0;min-height:calc(100vh - 64px)}
+.rail{background:var(--sunk);border-radius:14px 0 0 0;display:flex;flex-direction:column;min-width:0}
+.tabs{display:grid;grid-template-columns:1fr 1fr}
+.tab{border:0;padding:1em;font-weight:750;letter-spacing:.06em;font-size:.85rem;text-transform:uppercase;cursor:pointer;background:var(--ink);color:var(--ink-3);display:flex;gap:.5em;justify-content:center;align-items:center}
+.tab:first-child{border-radius:14px 0 0 0}
+.tab[aria-selected="true"]{background:var(--sunk);color:var(--accent)}
+.rail-list{padding:14px;display:grid;gap:8px;align-content:start}
+.step{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;text-align:left;border:0;border-radius:12px;padding:12px;background:transparent;cursor:pointer}
+.step .dot{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:#fff}
+.step.bad .dot{background:var(--warn)}
+.step b{display:block;font-size:.95rem;letter-spacing:.04em;text-transform:uppercase}
+.step small{color:var(--ink-2);font-size:.82rem;line-height:1.3;display:block}
+.step[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+.step[aria-current="true"] small{color:inherit;opacity:.85}
+.step[aria-current="true"] .dot{background:rgba(255,255,255,.25)}
+.qitem{display:grid;grid-template-columns:auto 34px minmax(0,1fr) auto;gap:8px;align-items:center;border-radius:12px;padding:8px;background:transparent;cursor:pointer;border:0;text-align:left}
+.qitem .mv{display:grid;gap:0}
+.qitem .mv button{border:0;background:transparent;padding:0 2px;cursor:pointer;color:var(--ink-3);line-height:1}
+.qitem .chk{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok)}
+.qitem.bad .chk{background:var(--bad-soft);color:var(--bad)}
+.qitem .tt{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.95rem}
+.qitem[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+.qitem[aria-current="true"] .mv button{color:inherit}
+.panel{background:var(--surface);border-radius:0 14px 0 0;display:flex;flex-direction:column;min-width:0}
+.panel-head{display:flex;align-items:center;gap:.8rem;padding:18px 26px;border-bottom:1px solid var(--line)}
+.panel-head h2{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.panel-body{padding:24px 26px 40px;display:grid;gap:22px;align-content:start;flex:1}
+.two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
+.media{border-radius:var(--r);background:var(--sunk);min-height:200px;display:grid;place-items:center;position:relative;overflow:hidden;border:1.5px dashed var(--line);cursor:pointer}
+.media img{max-height:260px;object-fit:contain}
+.media .tag{position:absolute;left:10px;top:10px;background:var(--surface);border-radius:999px;font-size:.75rem;font-weight:700;padding:.2em .7em}
+.media .rm{position:absolute;right:8px;top:8px;background:var(--surface)}
+.media .hint{color:var(--ink-2);text-align:center;padding:1rem;font-size:.92rem}
+.ans{display:grid;grid-template-columns:44px minmax(0,1fr) 38px;gap:12px;align-items:center}
+.ans .tick{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:transparent}
+.ans .tick[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.ans .box{display:flex;align-items:center;gap:.7rem;border:1.5px solid var(--line);border-radius:var(--r);padding:.2em .8em;background:var(--surface)}
+.ans .box:focus-within{border-color:var(--accent)}
+.ans .box .letter{font-family:var(--f-mono);color:var(--ink-3);font-weight:700}
+.ans .box input{border:0;outline:0;background:transparent;flex:1;padding:.55em 0;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:end}
+.row > .field{flex:1 1 200px}
+.setting{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.3rem 1rem;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.setting h3{font-size:1.05rem}
+.setting p{grid-column:1;color:var(--ink-2);font-size:.9rem}
+.setting .sub{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:16px;padding-top:.6rem}
+.setting .sub .field{flex:1 1 180px}
+.switch{position:relative;width:62px;height:32px;border-radius:999px;border:0;background:var(--line);cursor:pointer;flex:none}
+.switch::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--ok)}
+.switch[aria-checked="true"]::after{transform:translateX(30px)}
+.actionbar{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 26px calc(14px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);z-index:5}
+.actionbar .sp{flex:1}
+.dirty{font-size:.85rem;color:var(--warn);font-weight:700}
+.codebox{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.codebox .code{font-family:var(--f-mono);font-size:1.4rem;font-weight:700;letter-spacing:.12em;background:var(--accent-soft);color:var(--accent);padding:.35em .8em;border-radius:var(--r)}
+
+/* live stage */
+.stage{min-height:calc(100vh - 64px);display:flex;flex-direction:column}
+.stage-top{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--surface)}
+.stage-top .sp{flex:1}
+.stage-main{flex:1;padding:28px 24px;max-width:1300px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.lobby{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:40px;align-items:start}
+.qr{background:#fff;padding:18px;border-radius:18px;box-shadow:var(--shadow);display:grid;gap:10px;justify-items:center;max-width:100%}
+.qr #qrcode img,.qr #qrcode canvas{width:min(340px,70vw)!important;height:auto!important}
+.qr .url{font-family:var(--f-mono);font-size:.82rem;color:#333;word-break:break-all;text-align:center;max-width:340px}
+.bigcode{font-family:var(--f-mono);font-size:clamp(2.4rem,6vw,4.2rem);font-weight:700;letter-spacing:.14em;line-height:1}
+.counter{display:flex;align-items:baseline;gap:.6rem}
+.counter .n{font-family:var(--f-display);font-size:clamp(4rem,10vw,7rem);font-weight:800;line-height:.9;color:var(--accent);font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.3em .85em;font-weight:700;animation:pop .3s ease-out both}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
+.qhead{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.qtext{font-family:var(--f-display);font-size:clamp(1.6rem,3.4vw,2.7rem);font-weight:700;line-height:1.15;text-wrap:balance}
+.qbody{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;align-items:start}
+.qimg{background:#fff;border-radius:14px;padding:10px;max-width:min(520px,100%)}
+.qimg img{max-height:42vh;object-fit:contain;display:block;margin:auto}
+.timer{position:relative;width:96px;height:96px;flex:none}
+.timer svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer .t{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-mono);font-size:1.9rem;font-weight:700}
+.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.abtn{display:flex;align-items:center;gap:16px;text-align:left;border:0;border-radius:14px;padding:18px 20px;color:#fff;font-size:clamp(1.05rem,2vw,1.45rem);font-weight:700;min-height:84px;position:relative;transition:opacity .2s, transform .1s}
+.abtn .L{font-family:var(--f-mono);background:rgba(255,255,255,.22);border-radius:10px;width:2.1em;height:2.1em;display:grid;place-items:center;flex:none}
+.abtn .tx{flex:1;min-width:0}
+.abtn .cnt{font-family:var(--f-mono);font-size:1.1em;background:rgba(0,0,0,.18);padding:.15em .55em;border-radius:8px}
+.abtn.dim{opacity:.32}
+.abtn.right{outline:5px solid var(--ok);outline-offset:3px}
+.abtn .mark{display:grid;place-items:center;width:1.8em;height:1.8em;border-radius:50%;background:#fff;color:var(--ok);flex:none}
+.c0{background:var(--a0)}.c1{background:var(--a1)}.c2{background:var(--a2)}.c3{background:var(--a3)}.c4{background:var(--a4)}.c5{background:var(--a5)}
+.progress{display:flex;align-items:center;gap:.8rem;font-weight:700;color:var(--ink-2)}
+.bar{height:8px;border-radius:99px;background:var(--sunk);overflow:hidden;flex:1;min-width:120px}
+.bar > i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.board{display:grid;gap:8px;max-width:760px;width:100%}
+.brow{display:grid;grid-template-columns:3rem minmax(0,1fr) auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-weight:700;font-size:1.1rem}
+.brow .rk{font-family:var(--f-mono);color:var(--ink-3)}
+.brow:first-child{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.brow .pts{font-family:var(--f-mono)}
+.big-count{font-family:var(--f-display);font-size:min(30vw,14rem);font-weight:800;text-align:center;color:var(--accent);line-height:1}
+.center{display:grid;place-items:center;text-align:center;gap:1rem}
+.note{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:.9rem 1.1rem;font-size:.95rem}
+.note.warn{background:var(--bad-soft)}
+
+/* player */
+.pl{min-height:100vh;display:flex;flex-direction:column}
+.pl-top{display:flex;align-items:center;gap:.8rem;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.pl-top .sp{flex:1}
+.pl-main{flex:1;padding:22px 16px 40px;max-width:640px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:grid;gap:16px;box-shadow:var(--shadow)}
+.pl .answers{grid-template-columns:1fr}
+.pl .abtn{min-height:70px;font-size:1.1rem;cursor:pointer}
+.pl .abtn:disabled{cursor:default}
+.pl .abtn.picked{outline:4px solid var(--ink);outline-offset:3px}
+.result{border-radius:16px;padding:24px;text-align:center;display:grid;gap:8px}
+.result.ok{background:var(--ok-soft)} .result.no{background:var(--bad-soft)} .result.na{background:var(--sunk)}
+.result .pts{font-family:var(--f-display);font-size:3rem;font-weight:800;line-height:1}
+.no-copy{-webkit-user-select:none;user-select:none}
+.thinbar{height:6px;border-radius:9px;background:var(--sunk);overflow:hidden}
+.thinbar > i{display:block;height:100%;background:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.7em 1.2em;border-radius:12px;font-weight:700;z-index:99;box-shadow:var(--shadow)}
+.modal-bg{position:fixed;inset:0;background:rgba(10,14,28,.55);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{background:var(--bg);border-radius:18px;max-width:900px;width:100%;max-height:90vh;overflow:auto;padding:24px;display:grid;gap:18px}
+canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60;width:100%;height:100%}
+
+@media (max-width:860px){
+  .editor{grid-template-columns:1fr;padding:12px 12px 0}
+  .rail{border-radius:14px 14px 0 0}
+  .tab:first-child{border-radius:14px 0 0 0}.tab:last-child{border-radius:0 14px 0 0}
+  .panel{border-radius:0}
+  .two,.lobby,.qbody{grid-template-columns:1fr}
+  .answers{grid-template-columns:1fr}
+  .panel-body,.panel-head,.actionbar{padding-inline:16px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{.topbar,.stage-top,.no-print{display:none!important} body{background:#fff;color:#000}}
+.abtn.neutral{background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.abtn.neutral .cnt{background:var(--sunk)}
+.abtn.neutral.right{background:var(--ok-soft)}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end;max-width:900px;width:100%;margin:0 auto}
+.pod{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 14px;display:grid;gap:4px;text-align:center;min-width:0}
+.pod b{font-size:1.15rem;overflow-wrap:anywhere}
+.pod.p1{order:2;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);padding-block:34px}
+.pod.p2{order:1;padding-block:24px}.pod.p3{order:3}
+.pod .place{font-family:var(--f-display);font-size:2.4rem;font-weight:800;color:var(--accent);line-height:1}
+@media (max-width:640px){.podium{grid-template-columns:1fr}.pod.p1,.pod.p2,.pod.p3{order:0}}
+
+</style>
+<script>
+/* ===== POSTAVKE: jedini dio koji mijenjate (UPUTE.md, korak 4) =====
+   Dok je firebase null, aplikacija radi u demo načinu (samo u ovom pregledniku). */
+window.KVIZ_CONFIG = {
+  firebase: {
+    apiKey: "AIzaSyDOKOZcdMJ6En37-2OegKaPnKo_3jcIENc",
+    authDomain: "rt511-kviz.firebaseapp.com",
+    databaseURL: "https://rt511-kviz-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "rt511-kviz",
+    storageBucket: "rt511-kviz.firebasestorage.app",
+    messagingSenderId: "350597030844",
+    appId: "1:350597030844:web:fb817ce2954ae11538c1b9"
+  },
+  joinBaseURL: ""   /* neobavezno: adresa stranice za QR kod, ako se razlikuje od adrese ove stranice */
+};
+</script>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>window.KVIZ_PRIMJER = {"id": "rt2-laplace", "title": "RT – 2. predavanje: Laplaceova transformacija", "points": 0.5, "qTime": 30, "revealTime": 10, "bonusOn": true, "bonus": 0.5, "shuffleA": true, "questions": [{"id": "q1", "text": "Što Laplaceova transformacija čini s derivacijom funkcije po vremenu (uz nulte početne uvjete)?", "image": null, "answers": ["Pretvara je u množenje sa s", "Pretvara je u dijeljenje sa s", "Pretvara je u množenje s e^(−st)", "Pretvara je u zbrajanje sa s"], "correct": 0}, {"id": "q2", "text": "Kako se u praksi računa inverzna Laplaceova transformacija racionalne slike F(s)?", "image": null, "answers": ["Rastavom na parcijalne razlomke i čitanjem iz tablice", "Izravnim računanjem integrala u kompleksnoj ravnini", "Deriviranjem slike F(s) po s", "Primjenom teorema konačne vrijednosti"], "correct": 0}, {"id": "q3", "text": "Serijski RC krug ima R = 10 kΩ i C = 100 µF. Kolika je vremenska konstanta T?", "image": null, "answers": ["1 s", "0,1 s", "10 s", "1 ms"], "correct": 0}, {"id": "q4", "text": "Kakav vremenski odziv daje par polova p i p′ prikazan na slici?", "image": "data:image/jpeg;base64,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ozeOWuZ3vX01dLWE48uOISeYSOM5Le/augop0sPClHljtuTj84xOOrOvVa5muV2Vrr/g/wDA20CiiitzywooooAKKKKACiiigAooooAKKKKACiiigArN1b/lj/wL+laVZurf8sf+Bf0q4fETPYzaKKK3MQooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACvI/g5/yeH8cf+4L/wCkr165Xkfwc/5PD+OP/cF/9JXpS+F/11HHdH0BRRRXMbhRRRQAUUUUAFFFFABRRRQAUUUUAFYXg22trTwTZW9pot7o0K79tjeymWWLMjE7mLMTkksOTwR9K3awvBr27+CbJrW61m5iPmbZdZDC6b94339wB68Dj7uKl/Ev67G8b+xl2uu/aXy/Xt1N2iiiqMAooooAKKKKACiiigAooooAKKKKACiiigAooooAKzdW/wCWP/Av6VpVm6t/yx/4F/Srh8RM9jNooorcxCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAK8j+Dn/J4fxx/wC4L/6SvXrleR/Bz/k8P44/9wX/ANJXpS+F/wBdRx3R9AUUUVzG4UUUUAFFFFABRRRQAUUUUAFFFFABWH4PvV1DwXZXieIh4gV9+NTEKw+fiRh9xQAMY28D+HNblZPhq4u7rwvaz32oaZqFw2/fc6YMW7/OQNnJ6DAPPUGpfxI2j/Cl6r8n5fqvR9NaiiiqMQooooAKKKKACiiigAooooAKKKKACiiigAooooAKzdW/5Y/8C/pWlWbq3/LH/gX9KuHxEz2M2iiitzEKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAryP4Of8nh/HH/uC/8ApK9euV5H8HP+Tw/jj/3Bf/SV6Uvhf9dRx3R9AUUUVzG4UUUUAFFFFABRRRQAUUUUAFFFFABWT4Ztbiz8K2ttd6Pp2kTJv3WWnEGCLLsRtwq9Qcngck1rVheDbOGw8E2Vpb6BJoMab8adJKJWhzIx5YEg5zu6/wAVS/iRtH+FL1X5Pz/R+q67tFFFUYhRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAVm6t/wAsf+Bf0rSrN1b/AJY/8C/pVw+Imexm0UUVuYhRRRQAUUUUAFFF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", "answers": ["Raspirujuće titranje – sustav je nestabilan", "Prigušeno titranje – odziv iščezava", "Trajno titranje stalne amplitude", "Eksponencijalni rast bez titranja"], "correct": 0}]};</script>
+<script>
+(function(){
+"use strict";
+/* ============================================================
+   Povratna veza — kviz uživo za predavanja
+   Nastavnička konzola + studentska stranica u jednoj datoteci.
+   Pozadina: Firebase Realtime Database (kad je KVIZ_CONFIG.firebase
+   popunjen) ili lokalni demo način (localStorage, sve kartice istog
+   preglednika dijele podatke).
+   ============================================================ */
+
+const CFG = window.KVIZ_CONFIG || {};
+const params = new URLSearchParams(location.search);
+const IS_PLAYER = params.has('kod') || /^#igraj/.test(location.hash);
+const app = document.getElementById('app');
+const SAMPLE = window.KVIZ_PRIMJER || null;
+
+/* ---------- male pomoćne funkcije ---------- */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const clone = o => o == null ? o : JSON.parse(JSON.stringify(o));
+const rid = (n = 10) => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
+const LET = 'ABCDEF';
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fmtDate = t => { try { return new Date(t).toLocaleString('hr-HR', {day:'numeric', month:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit'}); } catch (e) { return ''; } };
+const I = {
+  check:'<svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  x:'<svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  pen:'<svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>',
+  trash:'<svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  copy:'<svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
+  eye:'<svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  play:'<svg class="i" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>',
+  plus:'<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  up:'<svg class="i" viewBox="0 0 24 24" style="width:.9em;height:.9em"><path d="M6 15l6-6 6 6"/></svg>',
+  down:'<svg class="i" viewBox="0 0 24 24" style="width:.9em;height:.9em"><path d="M6 9l6 6 6-6"/></svg>',
+  img:'<svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>',
+  full:'<svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  dl:'<svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  users:'<svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>'
+};
+const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M7 16h5l2-6 4 12 2-6h5" fill="none" stroke="var(--accent-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function toast(msg, ms = 2600) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+function download(name, text, type) {
+  try {
+    const url = URL.createObjectURL(new Blob([text], {type}));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  } catch (e) { toast('Preuzimanje nije uspjelo u ovom pregledniku.'); }
+}
+function sget(st, k) { try { return st.getItem(k); } catch (e) { return null; } }
+function sset(st, k, v) { try { st.setItem(k, v); } catch (e) {} }
+
+/* ============================================================
+   Pozadina podataka
+   ============================================================ */
+const TS_LOCAL = {'.sv':'timestamp'};
+function makeLocalDB() {
+  const KEY = 'povratna-veza-db';
+  let mem = {};
+  const load = () => { const s = sget(localStorage, KEY); try { return s ? JSON.parse(s) : mem; } catch (e) { return mem; } };
+  let tree = load();
+  const subs = new Set();
+  const parts = p => String(p).split('/').filter(Boolean);
+  const getAt = p => { let n = tree; for (const k of parts(p)) { if (n == null || typeof n !== 'object') return null; n = n[k]; } return n === undefined ? null : n; };
+  const resolveTS = v => {
+    if (v && typeof v === 'object') {
+      if (v['.sv'] === 'timestamp') return Date.now();
+      const o = Array.isArray(v) ? [] : {};
+      for (const k in v) o[k] = resolveTS(v[k]);
+      return o;
+    }
+    return v;
+  };
+  const setAt = (p, v) => {
+    v = resolveTS(clone(v));
+    const ks = parts(p);
+    if (!ks.length) { tree = v || {}; return; }
+    let n = tree;
+    for (let i = 0; i < ks.length - 1; i++) { if (n[ks[i]] == null || typeof n[ks[i]] !== 'object') n[ks[i]] = {}; n = n[ks[i]]; }
+    if (v === null || v === undefined) delete n[ks[ks.length - 1]]; else n[ks[ks.length - 1]] = v;
+  };
+  const save = () => { mem = tree; sset(localStorage, KEY, JSON.stringify(tree)); };
+  const fireOne = s => { const v = getAt(s.p); const j = JSON.stringify(v); if (j !== s.last) { s.last = j; s.cb(v == null ? null : JSON.parse(j)); } };
+  const fire = () => subs.forEach(fireOne);
+  window.addEventListener('storage', e => { if (e.key === KEY) { tree = load(); fire(); } });
+  return {
+    mode: 'demo',
+    TS: TS_LOCAL,
+    now: () => Date.now(),
+    get: p => Promise.resolve(clone(getAt(p))),
+    set: (p, v) => { setAt(p, v); save(); fire(); return Promise.resolve(); },
+    update: (p, o) => { for (const k in o) setAt(p + '/' + k, o[k]); save(); fire(); return Promise.resolve(); },
+    remove: p => { setAt(p, null); save(); fire(); return Promise.resolve(); },
+    on: (p, cb) => { const s = {p, cb, last: undefined}; subs.add(s); setTimeout(() => subs.has(s) && fireOne(s), 0); return () => subs.delete(s); }
+  };
+}
+function makeFireDB(fb) {
+  const db = fb.database();
+  let offset = 0;
+  db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });
+  return {
+    mode: 'firebase',
+    TS: fb.database.ServerValue.TIMESTAMP,
+    now: () => Date.now() + offset,
+    get: p => db.ref(p).get().then(s => s.val()),
+    set: (p, v) => db.ref(p).set(v),
+    update: (p, o) => db.ref(p).update(o),
+    remove: p => db.ref(p).remove(),
+    on: (p, cb) => { const r = db.ref(p); const f = s => cb(s.val()); r.on('value', f, err => console.warn('Pretplata odbijena:', p, err && err.message)); return () => r.off('value', f); }
+  };
+}
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Ne mogu učitati ' + src)); document.head.appendChild(s); });
+}
+
+let DB = null, UID = null, FB = null;
+
+async function boot() {
+  const fbcfg = CFG.firebase && CFG.firebase.apiKey && CFG.firebase.databaseURL ? CFG.firebase : null;
+  if (fbcfg) {
+    try {
+      const v = '10.12.2';
+      await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+      await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-auth-compat.js`);
+      await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-database-compat.js`);
+      FB = window.firebase; FB.initializeApp(fbcfg);
+      DB = makeFireDB(FB);
+    } catch (e) {
+      app.innerHTML = `<div class="wrap"><div class="note warn"><b>Ne mogu se spojiti na Firebase.</b> ${esc(e.message)}. Provjerite internetsku vezu i postavke u KVIZ_CONFIG.</div></div>`;
+      return;
+    }
+  } else {
+    DB = makeLocalDB();
+  }
+  if (IS_PLAYER) Player.start(); else Host.start();
+}
+
+/* ============================================================
+   Model kviza
+   ============================================================ */
+const fmtP = n => (Math.round((n || 0) * 100) / 100).toLocaleString('hr-HR');
+const fmtS = ms => ((ms || 0) / 1000).toLocaleString('hr-HR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+function newQuestion() { return {id: rid(8), text: '', image: null, answers: ['', '', '', ''], correct: 0}; }
+function newQuiz() {
+  return {id: rid(10), title: '', updatedAt: Date.now(), points: 0.5, qTime: 30, revealTime: 10, bonusOn: false, bonus: 0.5, shuffleA: true, questions: [newQuestion()]};
+}
+function normQuiz(q) {
+  const o = Object.assign(newQuiz(), q || {});
+  o.questions = (Array.isArray(o.questions) ? o.questions : Object.values(o.questions || {})).map(x => {
+    const n = Object.assign(newQuestion(), x || {});
+    let ans = Array.isArray(n.answers) ? n.answers : Object.values(n.answers || {});
+    if (ans.length && typeof ans[0] === 'object') { const ci = ans.findIndex(a => a && a.correct); n.correct = ci < 0 ? 0 : ci; ans = ans.map(a => (a && a.text) || ''); }
+    n.answers = ans.map(a => String(a || ''));
+    while (n.answers.length < 2) n.answers.push('');
+    n.correct = Math.min(Math.max(0, n.correct | 0), n.answers.length - 1);
+    return n;
+  });
+  ['points', 'qTime', 'revealTime', 'bonus'].forEach(k => { o[k] = Number(o[k]) || 0; });
+  return o;
+}
+function qProblems(q) {
+  const p = [];
+  if (!q.text.trim()) p.push('Nedostaje tekst pitanja');
+  if (q.answers.filter(a => a.trim()).length < 2) p.push('Potrebna su barem 2 ponuđena odgovora');
+  if (!(q.answers[q.correct] || '').trim()) p.push('Označeni točan odgovor je prazan');
+  return p;
+}
+function quizProblems(q) {
+  const p = [];
+  if (!q.title.trim()) p.push('Upišite naslov kviza');
+  if (!(q.points > 0)) p.push('Bodovi za točan odgovor moraju biti veći od 0');
+  if (!(q.qTime >= 5)) p.push('Vrijeme za odgovor mora biti barem 5 s');
+  if (!(q.revealTime >= 2)) p.push('Prikaz točnog odgovora mora trajati barem 2 s');
+  if (q.bonusOn && !(q.bonus > 0)) p.push('Upišite iznos bonusa');
+  return p;
+}
+/* poredak: više točnih odgovora, pa manje ukupno vrijeme točnih odgovora */
+function rankCmp(a, b) { return (b.correct || 0) - (a.correct || 0) || (a.time || 0) - (b.time || 0); }
+function seeded(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+  return () => { h = Math.imul(h ^ h >>> 16, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; }; }
+function seededOrder(n, key) { const r = seeded(key); const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ============================================================
+   NASTAVNIK
+   ============================================================ */
+const Host = {
+  quizzes: {}, history: {}, unsubs: [],
+  async start() {
+    if (DB.mode === 'firebase') {
+      FB.auth().onAuthStateChanged(async u => {
+        if (!u || u.isAnonymous) { if (u && u.isAnonymous) await FB.auth().signOut(); this.login(); return; }
+        UID = u.uid;
+        const adm = await DB.get('admins/' + UID).catch(() => null);
+        if (!adm) { this.notAdmin(u); return; }
+        this.afterLogin();
+      });
+    } else {
+      UID = sget(localStorage, 'pv-host') || ('host-' + rid(6)); sset(localStorage, 'pv-host', UID);
+      this.afterLogin();
+    }
+  },
+  topbar(right = '') {
+    return `<header class="topbar"><div class="brand" data-go="home">${LOGO}<span>Povratna veza</span></div>
+      ${DB.mode === 'demo' ? '<span class="mode-chip" title="Podaci se čuvaju samo u ovom pregledniku">Demo način</span>' : ''}
+      <div class="sp"></div>${right}
+      ${DB.mode === 'firebase' ? '<button class="btn ghost sm" data-act="logout">Odjava</button>' : ''}</header>`;
+  },
+  wire(root) {
+    root.addEventListener('click', e => {
+      if (e.target.closest('[data-go="home"]')) this.home();
+      if (e.target.closest('[data-act="logout"]')) FB.auth().signOut();
+    });
+  },
+  login(msg) {
+    this.cleanup();
+    app.innerHTML = `${this.topbar()}<div class="wrap" style="max-width:440px"><form class="card" id="lf">
+      <h1>Prijava nastavnika</h1><p class="muted">Prijavite se računom koji ste dodali kao administratora u Firebase.</p>
+      <label class="field"><span>E-pošta</span><input class="input" id="lf-mail" type="email" autocomplete="username" required></label>
+      <label class="field"><span>Lozinka</span><input class="input" id="lf-pass" type="password" autocomplete="current-password" required></label>
+      ${msg ? `<p class="err">${esc(msg)}</p>` : ''}
+      <button class="btn primary" type="submit">Prijava</button>
+      <p class="faint" style="font-size:.88rem">Natjecatelji se ne prijavljuju ovdje: oni ulaze QR kodom ili kodom kviza.</p></form></div>`;
+    $('#lf').addEventListener('submit', async e => {
+      e.preventDefault();
+      try { await FB.auth().signInWithEmailAndPassword($('#lf-mail').value.trim(), $('#lf-pass').value); }
+      catch (err) { this.login('Prijava nije uspjela: provjerite e-poštu i lozinku.'); }
+    });
+  },
+  notAdmin(u) {
+    app.innerHTML = `${this.topbar()}<div class="wrap" style="max-width:640px"><div class="card"><h2>Račun nije administrator</h2>
+      <p>Prijavljeni ste kao <b>${esc(u.email)}</b>, ali taj račun još nema prava nastavnika.</p>
+      <p>U Firebase konzoli, u bazi podataka dodajte čvor <span class="mono">admins/${esc(u.uid)}</span> s vrijednošću <span class="mono">true</span> (korak 6 u uputama), pa osvježite stranicu.</p>
+      <div class="row"><button class="btn ghost" id="cp-uid">${I.copy} Kopiraj UID</button><button class="btn" data-act="logout">Odjava</button></div></div></div>`;
+    this.wire(app);
+    $('#cp-uid').onclick = () => navigator.clipboard.writeText(u.uid).then(() => toast('UID kopiran'), () => toast(u.uid, 6000));
+  },
+  cleanup() { this.unsubs.forEach(f => f()); this.unsubs = []; if (Live.timer) { clearInterval(Live.timer); Live.timer = null; } Live.unsubs.forEach(f => f()); Live.unsubs = []; if (Live.ansUnsub) { Live.ansUnsub(); Live.ansUnsub = null; } },
+  async afterLogin() {
+    this.cleanup();
+    if (DB.mode === 'demo' && SAMPLE) {
+      const q = await DB.get('quizzes');
+      if (!q && !sget(localStorage, 'pv-seeded2')) { const s = normQuiz(clone(SAMPLE)); await DB.set('quizzes/' + s.id, s); sset(localStorage, 'pv-seeded2', '1'); }
+    }
+    const r = location.hash.match(/^#uzivo-(\d{6})$/);
+    if (r) { Live.open(r[1]); return; }
+    this.home();
+  },
+  home() {
+    this.cleanup();
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    app.innerHTML = `${this.topbar()}<main class="wrap">
+      <div class="home-head"><div><p class="label">Nastavnička konzola</p><h1>Moji kvizovi</h1></div>
+        <div class="row"><label class="btn ghost" for="imp">${I.dl} Uvezi JSON</label><input id="imp" type="file" accept=".json,application/json" hidden>
+        ${SAMPLE ? `<button class="btn ghost" id="add-sample">Dodaj primjer kviza</button>` : ''}
+        <button class="btn primary" id="new-q">${I.plus} Novi kviz</button></div></div>
+      <div id="qgrid" class="grid-q"><div class="empty">Učitavam…</div></div>
+      <div class="section-gap home-head"><div><p class="label">Izvještaji</p><h2>Održani kvizovi</h2></div></div>
+      <div id="hist"><div class="empty">Učitavam…</div></div>
+      ${DB.mode === 'demo' ? `<div class="note section-gap"><b>Demo način.</b> Podaci se čuvaju samo u ovom pregledniku. Stranu natjecatelja isprobajte tako da istu stranicu otvorite u novoj kartici s <span class="mono">#igraj</span> na kraju adrese i upišete kod kviza. Za pravo predavanje upišite Firebase postavke (UPUTE.md).</div>` : ''}
+    </main>`;
+    this.wire(app);
+    $('#new-q').onclick = () => Editor.open(newQuiz(), true);
+    const sb = $('#add-sample'); if (sb) sb.onclick = async () => { const s = normQuiz(clone(SAMPLE)); s.id = rid(10); s.updatedAt = Date.now(); await DB.set('quizzes/' + s.id, s); toast('Primjer dodan'); };
+    $('#imp').onchange = e => {
+      const f = e.target.files[0]; if (!f) return;
+      const rd = new FileReader();
+      rd.onload = async () => { try { const q = normQuiz(JSON.parse(rd.result)); q.id = rid(10); q.updatedAt = Date.now(); await DB.set('quizzes/' + q.id, q); toast('Kviz uvezen'); } catch (err) { toast('Datoteka nije ispravan kviz (JSON).'); } };
+      rd.readAsText(f);
+    };
+    this.unsubs.push(DB.on('quizzes', v => { this.quizzes = v || {}; this.renderGrid(); }));
+    this.unsubs.push(DB.on('history', v => { this.history = v || {}; this.renderHist(); }));
+  },
+  renderGrid() {
+    const g = $('#qgrid'); if (!g) return;
+    const list = Object.values(this.quizzes).map(normQuiz).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    if (!list.length) { g.innerHTML = `<div class="empty" style="grid-column:1/-1">Još nemate kvizova. Kliknite <b>Novi kviz</b>.</div>`; return; }
+    g.innerHTML = list.map(q => {
+      const bad = quizProblems(q).length || q.questions.some(x => qProblems(x).length);
+      const n = q.questions.length;
+      return `<article class="qcard" data-id="${esc(q.id)}">
+        <div class="body"><h3>${esc(q.title || 'Bez naslova')}</h3>
+          <div class="meta"><span>${n} ${n % 10 === 1 && n % 100 !== 11 ? 'pitanje' : 'pitanja'}</span><span>${q.qTime} s</span><span>${fmtP(q.points)} b/točan</span>${bad ? '<span style="color:var(--warn);font-weight:700">nepotpun</span>' : ''}</div>
+          <div class="acts">
+            <button class="btn go sm" data-a="run" ${bad ? 'disabled title="Dovršite kviz prije pokretanja"' : ''}>${I.play} Pokreni</button>
+            <button class="btn sm" data-a="edit">${I.pen} Uredi</button>
+            <span style="flex:1"></span>
+            <button class="icon-btn" data-a="dup" title="Kopiraj kviz" aria-label="Kopiraj kviz">${I.copy}</button>
+            <button class="icon-btn" data-a="exp" title="Izvezi JSON" aria-label="Izvezi JSON">${I.dl}</button>
+            <button class="icon-btn" data-a="del" title="Obriši" aria-label="Obriši">${I.trash}</button>
+          </div></div></article>`;
+    }).join('');
+    g.onclick = async e => {
+      const b = e.target.closest('[data-a]'); if (!b) return;
+      const id = b.closest('.qcard').dataset.id; const q = normQuiz(this.quizzes[id]); const a = b.dataset.a;
+      if (a === 'edit') Editor.open(q, false);
+      else if (a === 'run') Live.create(q);
+      else if (a === 'dup') { const c = clone(q); c.id = rid(10); c.title = (q.title || 'Kviz') + ' (kopija)'; c.updatedAt = Date.now(); await DB.set('quizzes/' + c.id, c); toast('Kopija izrađena'); }
+      else if (a === 'exp') download((q.title || 'kviz').replace(/[^\w\-]+/g, '_') + '.json', JSON.stringify(q, null, 2), 'application/json');
+      else if (a === 'del') {
+        if (b.dataset.confirm) { await DB.remove('quizzes/' + id); toast('Kviz obrisan'); }
+        else { b.dataset.confirm = '1'; b.innerHTML = '<span style="font-size:.8rem;font-weight:700;color:var(--bad)">Potvrdi</span>'; setTimeout(() => { if (b.isConnected) { delete b.dataset.confirm; b.innerHTML = I.trash; } }, 3500); }
+      }
+    };
+  },
+  renderHist() {
+    const h = $('#hist'); if (!h) return;
+    const list = Object.entries(this.history).map(([code, v]) => Object.assign({code}, v)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    if (!list.length) { h.innerHTML = `<div class="empty">Ovdje će se pojaviti izvještaji nakon prvog održanog kviza.</div>`; return; }
+    h.innerHTML = `<div class="table-wrap"><table class="t"><thead><tr><th>Kviz</th><th>Datum</th><th>Kod</th><th class="num">Natjecatelja</th><th>Stanje</th><th></th></tr></thead><tbody>
+      ${list.map(r => `<tr><td><b>${esc(r.title)}</b></td><td>${fmtDate(r.createdAt)}</td><td class="mono">${r.code}</td><td class="num">${r.players || 0}</td>
+        <td>${r.ended ? 'završen' : '<span style="color:var(--warn);font-weight:700">u tijeku</span>'}</td>
+        <td><button class="btn sm ${r.ended ? '' : 'go'}" data-code="${r.code}">${r.ended ? 'Rezultati' : 'Nastavi'}</button></td></tr>`).join('')}
+      </tbody></table></div>`;
+    h.onclick = e => { const b = e.target.closest('[data-code]'); if (b) Live.open(b.dataset.code); };
+  }
+};
+
+/* ============================================================
+   UREĐIVAČ KVIZA
+   ============================================================ */
+const Editor = {
+  q: null, tab: 'set', qi: 0, dirty: false,
+  open(q, isNew) { Host.cleanup(); this.q = normQuiz(clone(q)); this.tab = 'set'; this.qi = 0; this.dirty = !!isNew; this.render(); },
+  mark() { this.dirty = true; const d = $('#dirty'); if (d) d.hidden = false; },
+  setTab(t) { this.tab = t; $$('.tab').forEach(x => x.setAttribute('aria-selected', x.dataset.tab === t)); this.refreshRail(); this.renderPane(); },
+  render() {
+    app.innerHTML = `${Host.topbar()}<div class="editor">
+      <aside class="rail"><div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="set" aria-selected="${this.tab === 'set'}">Postavke</button>
+        <button class="tab" role="tab" data-tab="pit" aria-selected="${this.tab === 'pit'}">Pitanja</button></div>
+        <div class="rail-list" id="rail"></div></aside>
+      <section class="panel"><div id="pane" style="display:contents"></div>
+        <div class="actionbar"><button class="btn ghost" id="close" style="border-color:var(--ok);color:var(--ok)">Zatvori</button>
+          <button class="btn go" id="save">Spremi</button><span class="dirty" id="dirty" ${this.dirty ? '' : 'hidden'}>Nespremljene promjene</span>
+          <span class="sp"></span><span id="ab-right" style="display:flex;gap:10px;flex-wrap:wrap"></span></div></section></div>`;
+    Host.wire(app);
+    $$('.tab').forEach(t => t.onclick = () => this.setTab(t.dataset.tab));
+    $('#save').onclick = () => this.save();
+    $('#close').onclick = () => {
+      const b = $('#close');
+      if (this.dirty && !b.dataset.c) { b.dataset.c = '1'; b.textContent = 'Zatvori bez spremanja?'; setTimeout(() => { if (b.isConnected) { delete b.dataset.c; b.textContent = 'Zatvori'; } }, 4000); return; }
+      Host.home();
+    };
+    this.refreshRail(); this.renderPane();
+  },
+  refreshRail() {
+    const r = $('#rail'); if (!r) return;
+    if (this.tab === 'set') {
+      const ok = !quizProblems(this.q).length;
+      r.innerHTML = `<button class="step ${ok ? '' : 'bad'}" aria-current="true"><span class="dot">${I.pen}</span><span><b>Kviz</b><small>Naslov, bodovi, vremena, bonus i redoslijed odgovora</small></span></button>
+        <button class="step" id="go-q"><span class="dot">${this.q.questions.every(x => !qProblems(x).length) ? I.check : '!'}</span><span><b>Pitanja (${this.q.questions.length})</b><small>Tekst, ponuđeni odgovori i točan odgovor</small></span></button>`;
+      $('#go-q').onclick = () => this.setTab('pit');
+      return;
+    }
+    r.innerHTML = this.q.questions.map((x, i) => `<div class="qitem ${qProblems(x).length ? 'bad' : ''}" data-i="${i}" aria-current="${this.qi === i}" role="button" tabindex="0">
+        <span class="mv"><button data-mv="-1" aria-label="Pomakni gore">${I.up}</button><button data-mv="1" aria-label="Pomakni dolje">${I.down}</button></span>
+        <span class="chk">${qProblems(x).length ? '!' : I.check}</span>
+        <span class="tt">${i + 1}. ${esc(x.text || 'Novo pitanje')}</span>
+        <button class="icon-btn" data-del="${i}" aria-label="Obriši pitanje" title="Obriši pitanje">${I.trash}</button></div>`).join('')
+      + `<button class="btn ghost sm" id="rail-add" style="justify-self:start;margin-top:6px">${I.plus} Dodaj pitanje</button>`;
+    r.onclick = e => {
+      if (e.target.closest('#rail-add')) { this.addQ(); return; }
+      const it = e.target.closest('.qitem'); if (!it) return; const i = +it.dataset.i;
+      const mv = e.target.closest('[data-mv]');
+      if (mv) { const j = i + (+mv.dataset.mv); if (j < 0 || j >= this.q.questions.length) return; const a = this.q.questions; [a[i], a[j]] = [a[j], a[i]]; if (this.qi === i) this.qi = j; else if (this.qi === j) this.qi = i; this.mark(); this.refreshRail(); this.renderPane(); return; }
+      const del = e.target.closest('[data-del]');
+      if (del) {
+        if (this.q.questions.length === 1) { toast('Kviz mora imati barem jedno pitanje.'); return; }
+        if (!del.dataset.c) { del.dataset.c = '1'; del.innerHTML = '<span style="font-size:.75rem;font-weight:700;color:var(--bad)">Potvrdi</span>'; setTimeout(() => { if (del.isConnected) { delete del.dataset.c; del.innerHTML = I.trash; } }, 3000); return; }
+        this.q.questions.splice(i, 1); this.qi = Math.min(this.qi, this.q.questions.length - 1); this.mark(); this.refreshRail(); this.renderPane(); return;
+      }
+      this.qi = i; this.refreshRail(); this.renderPane();
+    };
+  },
+  addQ() { this.q.questions.push(newQuestion()); this.qi = this.q.questions.length - 1; this.mark(); this.setTab('pit'); $('#q-text').focus(); },
+  sw(id, on) { return `<button class="switch" role="switch" id="${id}" aria-checked="${!!on}" aria-label="Uključi ili isključi"></button>`; },
+  renderPane() {
+    const p = $('#pane'); const q = this.q; const ab = $('#ab-right');
+    if (this.tab === 'set') {
+      ab.innerHTML = `<button class="btn primary" id="next">Pitanja →</button>`;
+      $('#next').onclick = () => this.setTab('pit');
+      p.innerHTML = `<div class="panel-head"><h2>Postavke kviza</h2></div><div class="panel-body">
+        <label class="field"><span>Naslov kviza <i class="req">*</i></span><input class="input" id="f-title" maxlength="150" value="${esc(q.title)}" placeholder="npr. RT – 2. predavanje: Laplaceova transformacija"></label>
+        <div class="row">
+          <label class="field"><span>Bodova za točan odgovor <i class="req">*</i></span><input class="input" type="number" min="0.1" step="0.1" id="f-points" value="${q.points}"></label>
+          <label class="field"><span>Vrijeme za odgovor, s <i class="req">*</i></span><input class="input" type="number" min="5" max="600" id="f-qTime" value="${q.qTime}"></label>
+          <label class="field"><span>Prikaz točnog odgovora, s <i class="req">*</i></span><input class="input" type="number" min="2" max="120" id="f-revealTime" value="${q.revealTime}"></label></div>
+        <div class="setting"><div><h3>Bonus bodovi za prvoplasiranog</h3></div>${this.sw('s-bonusOn', q.bonusOn)}<p>Dodaju se pobjedniku na kraju kviza (uz barem jedan točan odgovor).</p>
+          <div class="sub" ${q.bonusOn ? '' : 'hidden'} id="sub-bonusOn"><label class="field" style="flex:0 1 220px"><span>Bonus, bodova</span><input class="input" type="number" min="0.1" step="0.1" id="f-bonus" value="${q.bonus}"></label></div></div>
+        <div class="setting"><div><h3>Nasumičan redoslijed odgovora za svakog natjecatelja</h3></div>${this.sw('s-shuffleA', q.shuffleA)}<p>Svaki natjecatelj na svom uređaju vidi ponuđene odgovore drugim redom, pa ne može prepisati slovo od susjeda. Na projektoru se tada odgovori prikazuju bez slova.</p></div>
+        <div class="note"><b>Pravila koja vrijede uvijek:</b> prijava QR kodom ili linkom s kodom; natjecatelj mora upisati ime i prezime; nakon klika na <i>Započni kviz</i> odbrojava se od 5 do 0; samo je jedan odgovor točan i može se odabrati samo jednom; poredak se prikazuje na kraju: više točnih odgovora je bolje, a pri jednakom broju odlučuje kraće ukupno vrijeme točnih odgovora.</div>
+        <p class="err" id="set-err">${quizProblems(q).map(esc).join(' · ')}</p>
+      </div>`;
+      const title = $('#f-title'); title.oninput = () => { q.title = title.value; this.mark(); this.status(); };
+      ['points', 'qTime', 'revealTime', 'bonus'].forEach(k => { const el = $('#f-' + k); if (el) el.oninput = () => { q[k] = Math.max(0, parseFloat(String(el.value).replace(',', '.')) || 0); this.mark(); this.status(); }; });
+      $$('.switch', p).forEach(s => s.onclick = () => { const k = s.id.slice(2); q[k] = !q[k]; s.setAttribute('aria-checked', q[k]); const sub = $('#sub-' + k); if (sub) sub.hidden = !q[k]; this.mark(); this.status(); });
+    } else {
+      const x = q.questions[this.qi]; const prob = qProblems(x);
+      ab.innerHTML = `<button class="btn ghost" id="pv">${I.eye} Pregled</button><button class="btn primary" id="addq">${I.plus} Dodaj pitanje</button>`;
+      $('#addq').onclick = () => this.addQ();
+      $('#pv').onclick = () => this.preview(x);
+      p.innerHTML = `<div class="panel-head"><span class="chk" id="q-chk" style="color:${prob.length ? 'var(--bad)' : 'var(--ok)'}">${prob.length ? '!' : I.check}</span><h2 id="ph-t">${this.qi + 1}. ${esc(x.text || 'Novo pitanje')}</h2>
+          <button class="icon-btn" id="q-dup" title="Kopiraj pitanje" aria-label="Kopiraj pitanje">${I.copy}</button></div>
+        <div class="panel-body">
+          <div class="two"><label class="field"><span>Tekst pitanja <i class="req">*</i></span><textarea class="input" id="q-text" maxlength="300" style="min-height:9em">${esc(x.text)}</textarea><span class="count" id="c-qt">${x.text.length}/300</span></label>
+          <div class="field"><span>Slika (neobavezno)</span><div class="media" id="m-q" tabindex="0" role="button" aria-label="Odaberi sliku pitanja">${x.image ? `<span class="tag">Slika</span><img src="${x.image}" alt="Slika uz pitanje"><button class="icon-btn rm" id="rm-q" aria-label="Ukloni sliku">${I.x}</button>` : `<div class="hint">${I.img}<br>Kliknite, povucite ili zalijepite sliku (Ctrl+V)</div>`}</div><input type="file" id="fi-q" accept="image/*" hidden></div></div>
+          <div class="field"><span>Ponuđeni odgovori <i class="req">*</i></span><span class="faint" style="font-size:.85rem">Kliknite krug lijevo od točnog odgovora. Točan je uvijek samo jedan.</span></div>
+          <div style="display:grid;gap:12px" id="ans" role="radiogroup" aria-label="Točan odgovor">${x.answers.map((a, i) => `<div class="ans"><button class="tick" role="radio" data-tick="${i}" aria-pressed="${x.correct === i}" aria-checked="${x.correct === i}" aria-label="Točan je odgovor ${LET[i]}">${I.check}</button>
+            <label class="box"><span class="letter">${LET[i]}</span><input data-at="${i}" value="${esc(a)}" maxlength="160" placeholder="Odgovor ${LET[i]}"></label>
+            <button class="icon-btn" data-adel="${i}" aria-label="Obriši odgovor ${LET[i]}" ${x.answers.length <= 2 ? 'disabled' : ''}>${I.trash}</button></div>`).join('')}</div>
+          ${x.answers.length < 6 ? `<button class="btn ghost sm" id="add-a" style="justify-self:start">${I.plus} Dodaj odgovor</button>` : ''}
+          <p class="err" id="q-err">${prob.map(esc).join(' · ')}</p>
+        </div>`;
+      const t = $('#q-text');
+      t.oninput = () => { x.text = t.value; $('#c-qt').textContent = t.value.length + '/300'; $('#ph-t').textContent = (this.qi + 1) + '. ' + (t.value || 'Novo pitanje'); this.mark(); this.status(); };
+      $$('[data-at]', p).forEach(inp => inp.oninput = () => { x.answers[+inp.dataset.at] = inp.value; this.mark(); this.status(); });
+      $$('[data-tick]', p).forEach(b => b.onclick = () => { x.correct = +b.dataset.tick; $$('[data-tick]', p).forEach(o => { const on = +o.dataset.tick === x.correct; o.setAttribute('aria-pressed', on); o.setAttribute('aria-checked', on); }); this.mark(); this.status(); });
+      $$('[data-adel]', p).forEach(b => b.onclick = () => { const i = +b.dataset.adel; x.answers.splice(i, 1); if (x.correct === i) x.correct = 0; else if (x.correct > i) x.correct--; this.mark(); this.refreshRail(); this.renderPane(); });
+      const aa = $('#add-a'); if (aa) aa.onclick = () => { x.answers.push(''); this.mark(); this.renderPane(); const ins = $$('[data-at]'); ins[ins.length - 1].focus(); };
+      $('#q-dup').onclick = () => { const c = clone(x); c.id = rid(8); this.q.questions.splice(this.qi + 1, 0, c); this.qi++; this.mark(); this.refreshRail(); this.renderPane(); toast('Pitanje kopirano'); };
+      this.bindMedia($('#m-q'), $('#fi-q'), url => { x.image = url; this.mark(); this.renderPane(); });
+      const rm = $('#rm-q'); if (rm) rm.onclick = e => { e.stopPropagation(); x.image = null; this.mark(); this.renderPane(); };
+      p.onpaste = e => { const f = Array.from(e.clipboardData.files || []).find(f => f.type.startsWith('image/')); if (f) { e.preventDefault(); this.readImg(f).then(u => { x.image = u; this.mark(); this.renderPane(); }); } };
+    }
+  },
+  status() {
+    this.refreshRail();
+    const se = $('#set-err'); if (se) se.textContent = quizProblems(this.q).join(' · ');
+    const x = this.q.questions[this.qi]; if (!x || this.tab !== 'pit') return; const prob = qProblems(x);
+    const c = $('#q-chk'); if (c) { c.style.color = prob.length ? 'var(--bad)' : 'var(--ok)'; c.innerHTML = prob.length ? '!' : I.check; }
+    const e = $('#q-err'); if (e) e.textContent = prob.join(' · ');
+  },
+  bindMedia(box, input, done) {
+    box.onclick = e => { if (e.target.closest('.rm')) return; input.click(); };
+    box.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
+    input.onchange = () => { const f = input.files[0]; if (f) this.readImg(f).then(done); input.value = ''; };
+    box.ondragover = e => { e.preventDefault(); box.style.borderColor = 'var(--accent)'; };
+    box.ondragleave = () => { box.style.borderColor = ''; };
+    box.ondrop = e => { e.preventDefault(); box.style.borderColor = ''; const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) this.readImg(f).then(done); };
+  },
+  readImg(file) {
+    return new Promise((res, rej) => {
+      const rd = new FileReader();
+      rd.onload = () => { const im = new Image(); im.onload = () => {
+        const k = Math.min(1, 1000 / im.width, 800 / im.height); const c = document.createElement('canvas');
+        c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', .85)); }; im.onerror = () => { toast('Slika se ne može učitati.'); rej(); }; im.src = rd.result; };
+      rd.readAsDataURL(file);
+    });
+  },
+  preview(x) {
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-label="Pregled pitanja"><div class="qhead"><span class="label" style="flex:1">Pregled · točan odgovor je istaknut</span><button class="icon-btn" aria-label="Zatvori">${I.x}</button></div>
+      <div class="qbody"><p class="qtext">${esc(x.text || 'Novo pitanje')}</p>${x.image ? `<div class="qimg"><img src="${x.image}" alt=""></div>` : ''}</div>
+      <div class="answers">${x.answers.map((a, i) => a.trim() ? `<div class="abtn c${i} ${x.correct === i ? 'right' : ''}"><span class="L">${LET[i]}</span><span class="tx">${esc(a)}</span>${x.correct === i ? `<span class="mark">${I.check}</span>` : ''}</div>` : '').join('')}</div></div>`;
+    bg.onclick = e => { if (e.target === bg || e.target.closest('.icon-btn')) bg.remove(); };
+    document.body.appendChild(bg);
+  },
+  async save() {
+    const q = this.q;
+    if (!q.title.trim()) { this.setTab('set'); toast('Upišite naslov kviza.'); $('#f-title').focus(); return; }
+    q.updatedAt = Date.now();
+    try { await DB.set('quizzes/' + q.id, clone(q)); this.dirty = false; $('#dirty').hidden = true; toast('Spremljeno'); }
+    catch (e) { toast('Spremanje nije uspjelo: ' + (e.message || 'provjerite vezu'), 5000); }
+  }
+};
+
+/* ============================================================
+   KVIZ UŽIVO
+   ============================================================ */
+const COUNTDOWN = 5;
+const Live = {
+  code: null, meta: null, secret: null, state: null, players: {}, scores: {}, curAnswers: {}, unsubs: [], timer: null, busy: false, auto: true, ansUnsub: null,
+  async create(quiz) {
+    quiz = normQuiz(quiz);
+    let code;
+    for (let i = 0; i < 12; i++) { code = String(100000 + Math.floor(Math.random() * 900000)); if (!(await DB.get('games/' + code + '/meta'))) break; }
+    const qs = quiz.questions.map(x => {
+      const list = x.answers.map((t, i) => ({t: t.trim(), ok: i === x.correct})).filter(a => a.t);
+      return {text: x.text.trim(), image: x.image || null, answers: list.map(a => a.t), correct: Math.max(0, list.findIndex(a => a.ok))};
+    });
+    const meta = {title: quiz.title, createdAt: DB.TS, host: UID, total: qs.length, shuffleA: !!quiz.shuffleA};
+    const settings = {points: quiz.points, qTime: quiz.qTime, revealTime: quiz.revealTime, bonusOn: !!quiz.bonusOn, bonus: quiz.bonusOn ? quiz.bonus : 0};
+    try {
+      await DB.set('games/' + code + '/secret', {questions: qs, settings});
+      await DB.set('games/' + code + '/meta', meta);
+      await DB.set('games/' + code + '/state', {phase: 'lobby'});
+      await DB.set('history/' + code, {title: quiz.title, createdAt: DB.TS, players: 0, ended: false});
+    } catch (e) { toast('Pokretanje nije uspjelo: ' + (e.message || ''), 5000); return; }
+    this.open(code);
+  },
+  async open(code) {
+    Host.cleanup();
+    this.code = code; this.players = {}; this.scores = {}; this.curAnswers = {}; this.state = null; this.busy = false; this.auto = true;
+    history.replaceState(null, '', location.pathname + location.search + '#uzivo-' + code);
+    app.innerHTML = `${Host.topbar(`<button class="btn ghost sm" id="fs">${I.full} Cijeli zaslon</button>`)}<div class="stage"><div class="stage-top" id="stop"></div><div class="stage-main" id="smain"><div class="empty">Učitavam kviz…</div></div></div>`;
+    Host.wire(app);
+    $('#fs').onclick = () => { const d = document.documentElement; Promise.resolve().then(() => document.fullscreenElement ? document.exitFullscreen() : d.requestFullscreen()).catch(() => toast('Cijeli zaslon nije dostupan; pritisnite F11.')); };
+    this.meta = await DB.get('games/' + code + '/meta');
+    this.secret = await DB.get('games/' + code + '/secret');
+    if (!this.meta || !this.secret) { $('#smain').innerHTML = `<div class="empty">Kviz s kodom ${esc(code)} ne postoji.</div>`; return; }
+    this.secret.questions = (Array.isArray(this.secret.questions) ? this.secret.questions : Object.values(this.secret.questions)).map(q => Object.assign(q, {answers: Array.isArray(q.answers) ? q.answers : Object.values(q.answers)}));
+    this.unsubs.push(DB.on('games/' + code + '/players', v => { this.players = v || {}; this.onPlayers(); }));
+    this.unsubs.push(DB.on('games/' + code + '/scores', v => { this.scores = v || {}; }));
+    this.unsubs.push(DB.on('games/' + code + '/state', v => { const old = this.state; this.state = v || {phase: 'lobby'}; this.onState(old); }));
+    this.timer = setInterval(() => this.tick(), 200);
+  },
+  get S() { return this.secret.settings; },
+  baseURL() {
+    if (CFG.joinBaseURL) return CFG.joinBaseURL.replace(/\/?$/, '/');
+    return location.origin && location.origin !== 'null' && /^https?:/.test(location.protocol) ? location.origin + location.pathname : '';
+  },
+  pcount() { return Object.keys(this.players).length; },
+  pname(p) { return p ? ((p.ime || '') + ' ' + (p.prezime || '')).trim() || 'Natjecatelj' : 'Natjecatelj'; },
+  onPlayers() {
+    const n = this.pcount();
+    ['#pcount', '#pcount2'].forEach(s => { const c = $(s); if (c) c.textContent = n; });
+    const ch = $('#pchips');
+    if (ch) {
+      const have = new Set($$('.chip', ch).map(x => x.dataset.u));
+      Object.entries(this.players).sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0)).forEach(([u, p]) => { if (!have.has(u)) { const s = document.createElement('span'); s.className = 'chip'; s.dataset.u = u; s.textContent = this.pname(p); ch.appendChild(s); } });
+      $$('.chip', ch).forEach(x => { if (!this.players[x.dataset.u]) x.remove(); });
+    }
+    const st = $('#start-btn'); if (st) st.disabled = n === 0;
+    const ac = $('#atotal'); if (ac) ac.textContent = n;
+    DB.update('history/' + this.code, {players: n}).catch(() => {});
+  },
+  topRow() {
+    const s = this.state || {}; const total = this.secret.questions.length;
+    const ph = {lobby: 'Prijava natjecatelja', countdown: 'Odbrojavanje', question: 'Pitanje u tijeku', reveal: 'Točan odgovor', end: 'Rezultati'}[s.phase] || '';
+    $('#stop').innerHTML = `<div style="min-width:0"><p class="label">${esc(ph)}</p><h3>${esc(this.meta.title)}</h3></div>
+      <span class="codebox"><span class="code" title="Kod kviza">${this.code}</span></span>
+      <span class="progress" title="Prijavljenih natjecatelja">${I.users}<span class="mono" id="pcount">${this.pcount()}</span></span>
+      ${s.phase === 'question' || s.phase === 'reveal' ? `<span class="progress" style="min-width:200px">Pitanje <span class="mono">${s.qi + 1}/${total}</span><span class="bar"><i style="width:${(s.qi + 1) / total * 100}%"></i></span></span>` : ''}
+      <span class="sp"></span>
+      ${s.phase === 'question' ? `<button class="btn sm" id="b-reveal">Zatvori pitanje</button>` : ''}
+      ${s.phase === 'reveal' ? `<label class="progress" style="font-size:.9rem;cursor:pointer"><input type="checkbox" id="b-auto" ${this.auto ? 'checked' : ''}> automatski dalje</label><button class="btn primary sm" id="b-next">${s.qi + 1 >= total ? 'Rezultati →' : 'Sljedeće pitanje →'}</button>` : ''}
+      ${s.phase === 'countdown' || s.phase === 'question' || s.phase === 'reveal' ? `<button class="btn danger sm" id="b-end">Prekini kviz</button>` : ''}
+      ${s.phase === 'end' || s.phase === 'lobby' ? `<button class="btn ghost sm" data-go="home">Moji kvizovi</button>` : ''}`;
+    const b = id => $('#' + id);
+    if (b('b-reveal')) b('b-reveal').onclick = () => this.reveal();
+    if (b('b-next')) b('b-next').onclick = () => this.next();
+    if (b('b-auto')) b('b-auto').onchange = e => { this.auto = e.target.checked; };
+    if (b('b-end')) b('b-end').onclick = e => { const x = e.currentTarget; if (!x.dataset.c) { x.dataset.c = 1; x.textContent = 'Sigurno prekinuti?'; setTimeout(() => { if (x.isConnected) { delete x.dataset.c; x.textContent = 'Prekini kviz'; } }, 3500); return; } this.end(); };
+  },
+  answersHTML(q, mode, dist) {
+    const sh = this.meta.shuffleA;
+    return `<div class="answers">${q.answers.map((a, i) => {
+      const ok = q.correct === i; const cls = sh ? 'neutral' : 'c' + i;
+      const st = mode === 'reveal' ? (ok ? 'right' : 'dim') : '';
+      return `<div class="abtn ${cls} ${st}">${sh ? '' : `<span class="L">${LET[i]}</span>`}<span class="tx">${esc(a)}</span>${mode === 'reveal' ? `<span class="cnt" title="Broj odabira">${(dist && dist[i]) || 0}</span>` : ''}${mode === 'reveal' && ok ? `<span class="mark">${I.check}</span>` : ''}</div>`; }).join('')}</div>`;
+  },
+  onState(old) {
+    const s = this.state;
+    if (old && old.phase === s.phase && old.qi === s.qi && JSON.stringify(old.at) === JSON.stringify(s.at)) return;
+    if (this.ansUnsub) { this.ansUnsub(); this.ansUnsub = null; }
+    this.topRow();
+    const m = $('#smain');
+    if (s.phase === 'lobby') {
+      const base = this.baseURL(); const url = base ? base + '?kod=' + this.code : '';
+      m.innerHTML = `<div class="lobby"><div class="qr"><div id="qrcode"></div><div class="url">${url ? 'Mobitel: skenirajte QR kod' : 'Demo: QR kod vodi na ovu stranicu tek nakon objave'}</div></div>
+        <div style="display:grid;gap:22px;align-content:start;min-width:0">
+          <div><p class="label">Kod kviza</p><div class="bigcode">${this.code.slice(0, 3)} ${this.code.slice(3)}</div></div>
+          <div class="note" style="font-size:1.05rem"><b>Računalo:</b> otvorite <span class="mono" style="word-break:break-all">${esc(base || 'adresu ove stranice s #igraj na kraju')}</span> i upišite kod.</div>
+          <div class="counter"><span class="n" id="pcount2">${this.pcount()}</span><span class="muted" style="font-size:1.2rem;font-weight:700">prijavljenih natjecatelja</span></div>
+          <div><button class="btn go lg" id="start-btn" ${this.pcount() ? '' : 'disabled'}>${I.play} Započni kviz</button></div>
+          <div class="chips" id="pchips"></div></div></div>`;
+      this.drawQR(url || ('Kod kviza: ' + this.code));
+      $('#start-btn').onclick = () => this.begin();
+      this.onPlayers();
+    } else if (s.phase === 'countdown') {
+      m.innerHTML = `<div class="center" style="flex:1"><p class="label">Kviz počinje za</p><div class="big-count mono" id="cd">${s.dur}</div><h2>${esc(this.meta.title)}</h2><p class="muted">${this.secret.questions.length} pitanja · ${this.S.qTime} s za odgovor · ${fmtP(this.S.points)} b za točan odgovor</p></div>`;
+    } else if (s.phase === 'question') {
+      const q = this.secret.questions[s.qi];
+      m.innerHTML = `<div class="qbody"><div style="display:grid;gap:18px;min-width:0"><p class="qtext">${esc(q.text)}</p>
+          <div class="progress"><span>Odgovorilo:</span><span class="mono" id="acount">0</span><span>/</span><span class="mono" id="atotal">${this.pcount()}</span></div></div>
+          <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">${q.image ? `<div class="qimg"><img src="${q.image}" alt=""></div>` : ''}${this.timerSVG()}</div></div>
+        ${this.answersHTML(q, 'q')}${this.meta.shuffleA ? '<p class="faint" style="text-align:center">Redoslijed odgovora na uređajima natjecatelja je nasumičan.</p>' : ''}`;
+      this.curAnswers = {};
+      this.ansUnsub = DB.on(`games/${this.code}/answers/${s.qi}`, v => { this.curAnswers = v || {}; const a = $('#acount'); if (a) a.textContent = Object.keys(this.curAnswers).length; });
+    } else if (s.phase === 'reveal') {
+      const q = this.secret.questions[s.qi]; const dist = s.dist || [];
+      const n = dist.reduce((a, b) => a + b, 0); const ok = dist[q.correct] || 0;
+      m.innerHTML = `<div class="qbody"><p class="qtext">${esc(q.text)}</p>${q.image ? `<div class="qimg"><img src="${q.image}" alt=""></div>` : ''}</div>
+        ${this.answersHTML(q, 'reveal', dist)}
+        <p class="progress" style="justify-content:center;font-size:1.15rem">Točno je odgovorilo <span class="mono">${ok}</span> od <span class="mono">${this.pcount()}</span> natjecatelja${n < this.pcount() ? ` · bez odgovora ${this.pcount() - n}` : ''}</p>
+        <div class="thinbar" style="max-width:520px;width:100%;margin:0 auto"><i id="revbar" style="width:100%"></i></div>`;
+    } else if (s.phase === 'end') {
+      this.showReport(m);
+    }
+  },
+  timerSVG() { return `<div class="timer"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" stroke="var(--sunk)" stroke-width="10" fill="none"/><circle id="tarc" cx="50" cy="50" r="44" stroke="var(--accent)" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><span class="t" id="tnum">–</span></div>`; },
+  drawQR(text) {
+    const el = $('#qrcode'); if (!el) return;
+    if (window.QRCode) { try { new window.QRCode(el, {text, width: 512, height: 512, colorDark: '#141a2e', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M}); return; } catch (e) {} }
+    el.innerHTML = `<div style="padding:2rem;color:#333;max-width:300px">QR kod se nije učitao. Natjecatelji mogu otvoriti link i upisati kod.</div>`;
+  },
+  async begin() {
+    if (this.busy) return; this.busy = true;
+    try { await DB.set(`games/${this.code}/state`, {phase: 'countdown', at: DB.TS, dur: COUNTDOWN}); }
+    finally { this.busy = false; }
+  },
+  async showQ(i) {
+    const q = this.secret.questions[i];
+    await DB.set(`games/${this.code}/state`, {phase: 'question', qi: i, qk: String(i), total: this.secret.questions.length, at: DB.TS, time: this.S.qTime,
+      q: {text: q.text, image: q.image || null, answers: q.answers}});
+  },
+  tick() {
+    const s = this.state; if (!s || this.busy) return;
+    const now = DB.now(); const at = typeof s.at === 'number' ? s.at : null; if (!at) return;
+    if (s.phase === 'countdown') {
+      const left = Math.ceil((at + s.dur * 1000 - now) / 1000); const cd = $('#cd'); if (cd) cd.textContent = Math.max(0, left);
+      if (now >= at + s.dur * 1000 + 400) { this.busy = true; this.showQ(0).finally(() => { this.busy = false; }); }
+    } else if (s.phase === 'question') {
+      const tot = s.time * 1000; const left = Math.max(0, at + tot - now);
+      const tn = $('#tnum'); if (tn) tn.textContent = Math.ceil(left / 1000);
+      const arc = $('#tarc'); if (arc) arc.setAttribute('stroke-dashoffset', String(276.5 * (1 - left / tot)));
+      const n = this.pcount(); const a = Object.keys(this.curAnswers).length;
+      if (now > at + tot + 600) this.reveal();
+      else if (n > 0 && a >= n) this.reveal();
+    } else if (s.phase === 'reveal') {
+      const tot = this.S.revealTime * 1000; const rb = $('#revbar'); if (rb) rb.style.width = this.auto ? (100 * Math.max(0, at + tot - now) / tot) + '%' : '0%';
+      if (this.auto && now > at + tot) this.next();
+    }
+  },
+  async reveal() {
+    const s = this.state; if (this.busy || !s || s.phase !== 'question') return; this.busy = true;
+    try {
+      const qi = s.qi; const q = this.secret.questions[qi];
+      const answers = (await DB.get(`games/${this.code}/answers/${qi}`)) || {};
+      const start = s.at; const lim = s.time * 1000;
+      const dist = q.answers.map(() => 0); const upd = {};
+      new Set([...Object.keys(this.players), ...Object.keys(this.scores)]).forEach(u => {
+        const prev = this.scores[u] || {correct: 0, time: 0, perQ: {}};
+        const a = answers[u]; let ok = false; let ms = null; let c = null;
+        if (a && typeof a.c === 'number' && a.c >= 0 && a.c < q.answers.length) {
+          c = a.c; dist[c]++;
+          ms = Math.max(0, Math.min(lim, (a.at || start + lim) - start));
+          ok = c === q.correct && (a.at || 0) <= start + lim + 1500;
+        }
+        const perQ = Object.assign({}, prev.perQ || {}); perQ[qi] = {c, ok, ms};
+        upd[u] = {correct: (prev.correct || 0) + (ok ? 1 : 0), time: (prev.time || 0) + (ok ? ms : 0), perQ, lastOk: ok, answered: c !== null, lastQ: qi};
+      });
+      await DB.set(`games/${this.code}/scores`, upd); this.scores = upd;
+      await DB.set(`games/${this.code}/state`, Object.assign({}, s, {phase: 'reveal', at: DB.TS, correct: q.correct, dist}));
+    } catch (e) { toast('Greška pri bodovanju: ' + (e.message || ''), 5000); }
+    finally { this.busy = false; }
+  },
+  async next() {
+    const s = this.state; if (this.busy || !s || s.phase !== 'reveal') return; this.busy = true;
+    try { if (s.qi + 1 >= this.secret.questions.length) await this.finish(); else await this.showQ(s.qi + 1); }
+    finally { this.busy = false; }
+  },
+  async end() {
+    if (this.state && this.state.phase === 'question') await this.reveal();
+    this.busy = true; try { await this.finish(); } finally { this.busy = false; }
+  },
+  async finish() {
+    const S = this.S; const ids = new Set([...Object.keys(this.players), ...Object.keys(this.scores)]);
+    const list = [...ids].map(u => Object.assign({u}, this.scores[u] || {correct: 0, time: 0, perQ: {}}));
+    list.sort(rankCmp);
+    const upd = {};
+    list.forEach((r, i) => {
+      const base = (r.correct || 0) * S.points;
+      const bonus = i === 0 && S.bonusOn && r.correct > 0 ? S.bonus : 0;
+      upd[r.u] = Object.assign({}, this.scores[r.u] || {correct: 0, time: 0, perQ: {}}, {rank: i + 1, of: list.length, points: base, bonus, total: Math.round((base + bonus) * 100) / 100});
+    });
+    await DB.set(`games/${this.code}/scores`, upd); this.scores = upd;
+    await DB.set(`games/${this.code}/board`, list.slice(0, 10).map(r => ({n: this.pname(this.players[r.u]), p: upd[r.u].total, k: r.correct || 0, t: r.time || 0})));
+    const lastQ = this.state && typeof this.state.qi === 'number' ? this.state.qi + 1 : 0;
+    await DB.set(`games/${this.code}/state`, {phase: 'end', at: DB.TS, played: lastQ});
+    await DB.update('history/' + this.code, {ended: true, players: this.pcount()});
+  },
+  reportRows() {
+    const nq = this.secret.questions.length;
+    const ids = new Set([...Object.keys(this.players), ...Object.keys(this.scores)]);
+    const rows = [...ids].map(u => { const p = this.players[u] || {}; const s = this.scores[u] || {}; const perQ = s.perQ || {};
+      const per = []; for (let i = 0; i < nq; i++) per.push(perQ[i] || {c: null, ok: false, ms: null});
+      return {ime: p.ime || '', prezime: p.prezime || '', per, correct: s.correct || 0, time: s.time || 0, points: s.points || 0, bonus: s.bonus || 0, total: s.total || 0, rank: s.rank || 0}; });
+    rows.sort((a, b) => (a.rank || 1e9) - (b.rank || 1e9) || rankCmp(a, b));
+    return rows;
+  },
+  showReport(m) {
+    const rows = this.reportRows(); const nq = this.secret.questions.length; const played = (this.state && this.state.played) || nq;
+    const qStats = this.secret.questions.map((q, i) => rows.length ? Math.round(100 * rows.filter(r => r.per[i].ok).length / rows.length) : 0);
+    const pod = rows.slice(0, 3);
+    m.innerHTML = `
+      <div class="home-head" style="margin:0"><div><p class="label">Konačni poredak</p><h1>${esc(this.meta.title)}</h1>
+        <p class="muted">${rows.length} natjecatelja · ${played} od ${nq} pitanja · ${fmtP(this.S.points)} b za točan odgovor${this.S.bonusOn ? ` · bonus za 1. mjesto ${fmtP(this.S.bonus)} b` : ''}</p></div>
+        <div class="row no-print"><button class="btn primary" id="xlsx">${I.dl} Preuzmi Excel izvještaj</button></div></div>
+      ${pod.length ? `<div class="podium">${pod.map((r, i) => `<div class="pod p${i + 1}"><span class="place">${i + 1}.</span><b>${esc((r.ime + ' ' + r.prezime).trim())}</b><span class="mono">${fmtP(r.total)} b${r.bonus ? ` <small>(+${fmtP(r.bonus)} bonus)</small>` : ''}</span><small class="mono">${r.correct}/${nq} točnih · ${fmtS(r.time)} s</small></div>`).join('')}</div>` : ''}
+      <div class="table-wrap"><table class="t"><thead><tr><th class="num">Mjesto</th><th>Prezime</th><th>Ime</th>${this.secret.questions.map((q, i) => `<th class="num" title="${esc(q.text)}">P${i + 1}</th>`).join('')}<th class="num">Točnih</th><th class="num">Vrijeme, s</th><th class="num">Bonus</th><th class="num">Bodovi</th></tr></thead>
+        <tbody>${rows.map(r => `<tr><td class="num">${r.rank}.</td><td><b>${esc(r.prezime)}</b></td><td>${esc(r.ime)}</td>${r.per.map(p => `<td class="num" style="color:${p.ok ? 'var(--ok)' : (p.c === null ? 'var(--ink-3)' : 'var(--bad)')}" title="${p.c === null ? 'bez odgovora' : (p.ok ? 'točno' : 'netočno') + ', ' + fmtS(p.ms) + ' s'}">${p.ok ? '✓' : (p.c === null ? '–' : '✗')}</td>`).join('')}<td class="num">${r.correct}/${nq}</td><td class="num">${fmtS(r.time)}</td><td class="num">${r.bonus ? fmtP(r.bonus) : ''}</td><td class="num"><b>${fmtP(r.total)}</b></td></tr>`).join('') || `<tr><td colspan="${nq + 7}">Nema natjecatelja.</td></tr>`}</tbody>
+        <tfoot><tr><td></td><td colspan="2" class="faint">Točno odgovorilo</td>${qStats.map(p => `<td class="num faint">${p}%</td>`).join('')}<td colspan="4"></td></tr></tfoot></table></div>
+      <p class="faint" style="font-size:.88rem">Vrijeme je zbroj vremena odgovaranja na točno odgovorena pitanja; pri jednakom broju točnih odgovora bolje mjesto ima kraće vrijeme.</p>`;
+    if (pod.length) confetti();
+    $('#xlsx').onclick = () => this.excel(rows);
+  },
+  async excel(rows) {
+    const qs = this.secret.questions; const nq = qs.length;
+    if (!window.XLSX) { try { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); } catch (e) {} }
+    const date = new Date(); const d = date.toLocaleDateString('hr-HR');
+    const res = [['Mjesto', 'Prezime', 'Ime', 'Točnih odgovora', 'Od pitanja', 'Vrijeme točnih odgovora (s)', 'Bodovi za točne', 'Bonus', 'Ukupno bodova'],
+      ...rows.map(r => [r.rank, r.prezime, r.ime, r.correct, nq, Math.round(r.time / 100) / 10, r.points, r.bonus, r.total])];
+    const det = [['Mjesto', 'Prezime', 'Ime', ...qs.flatMap((q, i) => [`P${i + 1} odgovor`, `P${i + 1} točno`, `P${i + 1} vrijeme (s)`])],
+      ...rows.map(r => [r.rank, r.prezime, r.ime, ...r.per.flatMap((p, i) => [p.c === null ? '' : qs[i].answers[p.c], p.c === null ? '' : (p.ok ? 1 : 0), p.ms === null ? '' : Math.round(p.ms / 100) / 10])])];
+    const qsh = [['Pitanje', 'Tekst', 'Točan odgovor', 'Točno odgovorilo', 'Udio točnih (%)'],
+      ...qs.map((q, i) => { const k = rows.filter(r => r.per[i].ok).length; return [i + 1, q.text, q.answers[q.correct], k, rows.length ? Math.round(100 * k / rows.length) : 0]; })];
+    const info = [['Kviz', this.meta.title], ['Kod', this.code], ['Datum izvještaja', d], ['Bodova za točan odgovor', this.S.points], ['Vrijeme za odgovor (s)', this.S.qTime], ['Bonus za 1. mjesto', this.S.bonusOn ? this.S.bonus : 0], ['Pravilo poretka', 'Više točnih odgovora; pri jednakom broju kraće ukupno vrijeme točnih odgovora.']];
+    const fname = `Rezultati_${(this.meta.title || 'kviz').replace(/[^\wčćžšđČĆŽŠĐ\-]+/g, '_').slice(0, 60)}_${this.code}`;
+    if (window.XLSX) {
+      const X = window.XLSX; const wb = X.utils.book_new();
+      const add = (aoa, name, widths) => { const ws = X.utils.aoa_to_sheet(aoa); ws['!cols'] = widths.map(w => ({wch: w})); X.utils.book_append_sheet(wb, ws, name); };
+      add(res, 'Rezultati', [8, 18, 14, 15, 10, 24, 15, 8, 14]);
+      add(det, 'Odgovori po pitanjima', [8, 18, 14, ...qs.flatMap(() => [30, 10, 14])]);
+      add(qsh, 'Pitanja', [9, 60, 40, 16, 15]);
+      add(info, 'Podaci o kvizu', [26, 70]);
+      try { X.writeFile(wb, fname + '.xlsx'); } catch (e) { toast('Preuzimanje nije uspjelo u ovom pregledniku.'); }
+    } else {
+      const csv = '﻿' + res.map(r => r.map(c => { c = typeof c === 'number' ? String(c).replace('.', ',') : String(c); return /[;"\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';')).join('\r\n');
+      download(fname + '.csv', csv, 'text/csv;charset=utf-8'); toast('Excel biblioteka nije dostupna: preuzet je CSV koji se otvara u Excelu.', 5000);
+    }
+  }
+};
+
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const c = document.createElement('canvas'); c.id = 'confetti'; document.body.appendChild(c);
+  const g = c.getContext('2d'); const W = c.width = innerWidth; const H = c.height = innerHeight;
+  const cols = ['#e0502a', '#1f72d6', '#d39b06', '#7a3fd1', '#0f8c86', '#1f8a4c'];
+  const ps = Array.from({length: 160}, () => ({x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, r: Math.random() * 6.3, s: 6 + Math.random() * 6, c: cols[Math.floor(Math.random() * cols.length)]}));
+  let t = 0; (function f() { g.clearRect(0, 0, W, H); ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.r += .1; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); g.restore(); }); if (++t < 260) requestAnimationFrame(f); else c.remove(); })();
+}
+
+/* ============================================================
+   NATJECATELJ
+   ============================================================ */
+const Player = {
+  code: null, meta: null, me: null, state: null, my: null, board: null, picked: {}, unsubs: [], timer: null,
+  async start() {
+    if (DB.mode === 'firebase') {
+      try { const cur = FB.auth().currentUser || (await new Promise(r => { const off = FB.auth().onAuthStateChanged(u => { off(); r(u); }); }));
+        UID = cur && cur.isAnonymous ? cur.uid : (await FB.auth().signInAnonymously()).user.uid; }
+      catch (e) { this.shell(`<div class="card"><h2>Ne mogu se spojiti</h2><p>Provjerite internetsku vezu pa osvježite stranicu.</p></div>`); return; }
+    } else { UID = sget(sessionStorage, 'pv-uid') || ('igrac-' + rid(6)); sset(sessionStorage, 'pv-uid', UID); }
+    const code = (params.get('kod') || '').replace(/\D/g, '') || sget(sessionStorage, 'pv-code');
+    if (code && code.length === 6) this.enter(code); else this.askCode();
+  },
+  shell(inner, top = '') {
+    app.innerHTML = `<div class="pl"><header class="pl-top"><div class="brand" style="min-width:0">${LOGO}<span style="overflow:hidden;text-overflow:ellipsis">${esc(this.meta ? this.meta.title : 'Povratna veza')}</span></div><div class="sp"></div>${top}</header><main class="pl-main" id="pm">${inner}</main></div>`;
+  },
+  askCode(msg) {
+    this.shell(`<form class="card" id="cf"><h1>Ulaz u kviz</h1><label class="field"><span>Kod kviza (6 znamenki)</span><input class="input mono" id="cf-code" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="123 456" style="font-size:1.6rem;letter-spacing:.15em;text-align:center"></label>
+      ${msg ? `<p class="err">${esc(msg)}</p>` : ''}<button class="btn primary lg">Dalje</button></form>`);
+    $('#cf').onsubmit = e => { e.preventDefault(); const c = $('#cf-code').value.replace(/\D/g, ''); if (c.length !== 6) { this.askCode('Kod ima 6 znamenki.'); return; } this.enter(c); };
+    $('#cf-code').focus();
+  },
+  async enter(code) {
+    this.code = code;
+    this.meta = await DB.get('games/' + code + '/meta').catch(() => null);
+    if (!this.meta) { sset(sessionStorage, 'pv-code', ''); this.meta = null; this.askCode('Kviz s kodom ' + code + ' ne postoji.'); return; }
+    sset(sessionStorage, 'pv-code', code);
+    this.me = await DB.get(`games/${code}/players/${UID}`).catch(() => null);
+    const st = await DB.get(`games/${code}/state`).catch(() => null);
+    if (!this.me && st && st.phase === 'end') { this.shell(`<div class="card"><h2>Kviz je završio</h2><p class="muted">Prijave više nisu moguće.</p></div>`); return; }
+    if (this.me) this.listen(); else this.joinForm();
+  },
+  joinForm(msg, keep) {
+    keep = keep || {};
+    this.shell(`<form class="card" id="jf">
+      <div><p class="label">Prijava u kviz</p><h1>${esc(this.meta.title)}</h1><p class="muted" style="margin-top:.4rem">Upišite svoje pravo ime i prezime: po njima se upisuju bodovi.</p></div>
+      <label class="field"><span>Ime</span><input class="input" id="jf-ime" required maxlength="40" autocomplete="given-name" value="${esc(keep.ime || '')}"></label>
+      <label class="field"><span>Prezime</span><input class="input" id="jf-prez" required maxlength="60" autocomplete="family-name" value="${esc(keep.prezime || '')}"></label>
+      ${msg ? `<p class="err">${esc(msg)}</p>` : ''}
+      <button class="btn primary lg" id="jf-go">Uđi u kviz</button></form>`);
+    $('#jf').onsubmit = async e => {
+      e.preventDefault();
+      const tidy = s => s.trim().replace(/\s+/g, ' ');
+      const p = {ime: tidy($('#jf-ime').value), prezime: tidy($('#jf-prez').value)};
+      if (p.ime.length < 2 || p.prezime.length < 2) { this.joinForm('Upišite puno ime i prezime.', p); return; }
+      p.joinedAt = DB.TS; $('#jf-go').disabled = true;
+      try { await DB.set(`games/${this.code}/players/${UID}`, p); this.me = p; this.listen(); }
+      catch (err) { this.joinForm('Prijava nije uspjela. Je li kviz možda već završio?', p); }
+    };
+  },
+  listen() {
+    this.unsubs.forEach(f => f()); this.unsubs = [];
+    this.unsubs.push(DB.on(`games/${this.code}/state`, v => { const old = this.state; this.state = v || {phase: 'lobby'}; this.render(old); }));
+    this.unsubs.push(DB.on(`games/${this.code}/scores/${UID}`, v => { this.my = v; if (this.state && (this.state.phase === 'reveal' || this.state.phase === 'end')) this.render(null, true); }));
+    this.unsubs.push(DB.on(`games/${this.code}/board`, v => { this.board = v; if (this.state && this.state.phase === 'end') this.render(null, true); }));
+    if (!this.timer) this.timer = setInterval(() => this.tick(), 200);
+  },
+  name() { const p = this.me || {}; return ((p.ime || '') + ' ' + (p.prezime || '')).trim(); },
+  order(qi, n) { return this.meta.shuffleA ? seededOrder(n, UID + '|' + this.code + '|' + qi) : [...Array(n).keys()]; },
+  render(old, force) {
+    const s = this.state;
+    if (!force && old && old.phase === s.phase && old.qi === s.qi && JSON.stringify(old.at) === JSON.stringify(s.at)) return;
+    const top = `<span class="faint" style="font-weight:700;font-size:.9rem;text-align:right">${esc(this.name())}</span>`;
+    if (s.phase === 'lobby') {
+      this.shell(`<div class="card center" style="padding:40px 22px"><span style="width:64px;height:64px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:1.8rem">${I.check}</span>
+        <h1>Prijavljeni ste</h1><p class="muted">Pričekajte da nastavnik pokrene kviz. Ne zatvarajte ovu stranicu.</p></div>`, top);
+    } else if (s.phase === 'countdown') {
+      this.shell(`<div class="center" style="flex:1;padding-top:12vh"><p class="label">Kviz počinje za</p><div class="big-count mono" id="pcd">${s.dur}</div></div>`, top);
+    } else if (s.phase === 'question') {
+      const q = s.q; const ans = Array.isArray(q.answers) ? q.answers : Object.values(q.answers || {}); const ord = this.order(s.qi, ans.length); const picked = this.picked[s.qi];
+      this.shell(`<div class="thinbar"><i id="ptb" style="width:100%"></i></div>
+        <div class="qhead"><span class="label" style="flex:1">Pitanje ${s.qi + 1} od ${s.total}</span><span class="mono" style="font-weight:700;font-size:1.2rem" id="pts">${s.time}</span></div>
+        <p class="no-copy" style="font-family:var(--f-display);font-size:1.4rem;font-weight:700;line-height:1.2">${esc(q.text)}</p>
+        ${q.image ? `<div class="qimg" style="max-width:100%"><img src="${q.image}" alt=""></div>` : ''}
+        <div class="answers no-copy" id="pans">${ord.map((oi, pos) => `<button class="abtn c${pos} ${picked === undefined ? '' : (picked === oi ? 'picked' : 'dim')}" data-c="${oi}" ${picked !== undefined ? 'disabled' : ''}><span class="L">${LET[pos]}</span><span class="tx">${esc(ans[oi])}</span></button>`).join('')}</div>
+        <p class="center muted" id="pmsg">${picked !== undefined ? 'Odgovor je zabilježen. Pričekajte rezultat.' : 'Odaberite jedan odgovor. Odabir se ne može promijeniti.'}</p>`, top);
+      $('#pans').onclick = e => { const b = e.target.closest('[data-c]'); if (b && !b.disabled) this.answer(+b.dataset.c); };
+      if (picked === undefined) DB.get(`games/${this.code}/answers/${s.qi}/${UID}`).then(a => { if (a && typeof a.c === 'number' && this.state.qi === s.qi && this.picked[s.qi] === undefined) { this.picked[s.qi] = a.c; this.render(null, true); } }).catch(() => {});
+    } else if (s.phase === 'reveal') {
+      const my = this.my && this.my.lastQ === s.qi ? this.my : null;
+      const cls = !my ? 'na' : (!my.answered ? 'na' : (my.lastOk ? 'ok' : 'no'));
+      const ans = Array.isArray(s.q.answers) ? s.q.answers : Object.values(s.q.answers || {});
+      this.shell(`<div class="result ${cls}"><p class="label">${s.qi + 1}. pitanje</p>
+        <h1>${cls === 'ok' ? 'Točno!' : cls === 'no' ? 'Netočno' : (my ? 'Niste odgovorili' : 'Provjeravam…')}</h1>
+        ${my ? `<p class="muted">Točnih do sada: <b class="mono">${my.correct}</b> od ${s.qi + 1}</p>` : ''}</div>
+        <div class="card"><p><span class="label">Točan odgovor</span><br><b style="font-size:1.15rem">${esc(ans[s.correct] || '')}</b></p></div>`, top);
+    } else if (s.phase === 'end') {
+      const b = Array.isArray(this.board) ? this.board : (this.board ? Object.values(this.board) : []);
+      const my = this.my && this.my.rank ? this.my : null;
+      this.shell(`<div class="result ${my && my.rank === 1 ? 'ok' : 'na'}"><p class="label">Kviz je završio</p><h1>${my ? my.rank + '. mjesto od ' + my.of : 'Računam poredak…'}</h1>
+        ${my ? `<div class="pts">${fmtP(my.total)}</div><p class="muted">bodova${my.bonus ? ` (uključuje bonus ${fmtP(my.bonus)})` : ''} · ${my.correct} točnih od ${this.meta.total}</p>` : ''}</div>
+        ${b.length ? `<div><p class="label" style="margin-bottom:.6rem">Poredak</p><div class="board">${b.map((r, i) => `<div class="brow"><span class="rk">${i + 1}.</span><span>${esc(r.n)}<br><small class="faint mono">${r.k} točnih · ${fmtS(r.t)} s</small></span><span class="pts">${fmtP(r.p)}</span></div>`).join('')}</div></div>` : ''}`, top);
+      if (my && my.rank <= 3 && !this.confettiDone) { this.confettiDone = true; confetti(); }
+      sset(sessionStorage, 'pv-code', '');
+    }
+  },
+  async answer(c) {
+    const s = this.state; if (!s || s.phase !== 'question' || this.picked[s.qi] !== undefined) return;
+    if (DB.now() > s.at + s.time * 1000) return;
+    this.picked[s.qi] = c;
+    $$('#pans .abtn').forEach(b => { b.disabled = true; b.classList.add(+b.dataset.c === c ? 'picked' : 'dim'); });
+    const m0 = $('#pmsg'); if (m0) m0.textContent = 'Šaljem…';
+    try { await DB.set(`games/${this.code}/answers/${s.qi}/${UID}`, {c, at: DB.TS}); const m = $('#pmsg'); if (m) m.textContent = 'Odgovor je zabilježen. Pričekajte rezultat.'; }
+    catch (e) { const m = $('#pmsg'); if (m) m.textContent = 'Odgovor nije prihvaćen: vrijeme je isteklo.'; }
+  },
+  tick() {
+    const s = this.state; if (!s || typeof s.at !== 'number') return; const now = DB.now();
+    if (s.phase === 'countdown') { const e = $('#pcd'); if (e) e.textContent = Math.max(0, Math.ceil((s.at + s.dur * 1000 - now) / 1000)); }
+    if (s.phase === 'question') { const tot = s.time * 1000; const left = Math.max(0, s.at + tot - now); const t = $('#pts'); if (t) t.textContent = Math.ceil(left / 1000); const b = $('#ptb'); if (b) b.style.width = (100 * left / tot) + '%';
+      if (left <= 0 && this.picked[s.qi] === undefined) { const bs = $$('#pans .abtn:not([disabled])'); if (bs.length) { bs.forEach(b => { b.disabled = true; b.classList.add('dim'); }); const m = $('#pmsg'); if (m) m.textContent = 'Vrijeme je isteklo.'; } } }
+  }
+};
+
+boot();
+})();
+
+</script>
+</body>
+</html>
