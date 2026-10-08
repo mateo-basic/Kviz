@@ -260,7 +260,11 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60;width:100%
 
 const CFG = window.KVIZ_CONFIG || {};
 const params = new URLSearchParams(location.search);
-const IS_PLAYER = params.has('kod') || /^#igraj/.test(location.hash);
+const HAS_FB = !!(CFG.firebase && CFG.firebase.apiKey && CFG.firebase.apiKey !== 'UPIŠITE' && CFG.firebase.databaseURL);
+/* Gola adresa = stranica za natjecatelje (upis koda). Nastavnik ulazi preko ?nastavnik.
+   U demo načinu (bez Firebasea) gola adresa otvara nastavničku konzolu. */
+const IS_HOST_URL = params.has('nastavnik') || /^#(nastavnik|uzivo-)/.test(location.hash);
+const IS_PLAYER = params.has('kod') || /^#igraj/.test(location.hash) || (HAS_FB && !IS_HOST_URL);
 const app = document.getElementById('app');
 const SAMPLE = window.KVIZ_PRIMJER || null;
 
@@ -474,7 +478,7 @@ const Host = {
       <label class="field"><span>Lozinka</span><input class="input" id="lf-pass" type="password" autocomplete="current-password" required></label>
       ${msg ? `<p class="err">${esc(msg)}</p>` : ''}
       <button class="btn primary" type="submit">Prijava</button>
-      <p class="faint" style="font-size:.88rem">Natjecatelji se ne prijavljuju ovdje: oni ulaze QR kodom ili kodom kviza.</p></form></div>`;
+      <p class="faint" style="font-size:.88rem">Natjecatelji se ne prijavljuju ovdje: oni otvaraju adresu bez <span class="mono">?nastavnik</span> i upisuju kod kviza. Spremite ovu stranicu u oznake (bookmark).</p></form></div>`;
     $('#lf').addEventListener('submit', async e => {
       e.preventDefault();
       try { await FB.auth().signInWithEmailAndPassword($('#lf-mail').value.trim(), $('#lf-pass').value); }
@@ -1019,7 +1023,8 @@ const Player = {
   },
   askCode(msg) {
     this.shell(`<form class="card" id="cf"><h1>Ulaz u kviz</h1><label class="field"><span>Kod kviza (6 znamenki)</span><input class="input mono" id="cf-code" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="123 456" style="font-size:1.6rem;letter-spacing:.15em;text-align:center"></label>
-      ${msg ? `<p class="err">${esc(msg)}</p>` : ''}<button class="btn primary lg">Dalje</button></form>`);
+      ${msg ? `<p class="err">${esc(msg)}</p>` : ''}<button class="btn primary lg">Dalje</button></form>
+      <p class="faint" style="text-align:center;font-size:.85rem"><a href="${esc(location.pathname)}?nastavnik" style="color:inherit">Prijava nastavnika</a></p>`);
     $('#cf').onsubmit = e => { e.preventDefault(); const c = $('#cf-code').value.replace(/\D/g, ''); if (c.length !== 6) { this.askCode('Kod ima 6 znamenki.'); return; } this.enter(c); };
     $('#cf-code').focus();
   },
