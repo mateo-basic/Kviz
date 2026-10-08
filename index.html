@@ -240,23 +240,8 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:60;width:100%
 @media (max-width:640px){.podium{grid-template-columns:1fr}.pod.p1,.pod.p2,.pod.p3{order:0}}
 
 </style>
-<script>
-/* ===== POSTAVKE: jedini dio koji mijenjate (UPUTE.md, korak 4) =====
-   Dok je firebase null, aplikacija radi u demo načinu (samo u ovom pregledniku). */
-window.KVIZ_CONFIG = {
-  firebase: {
-    apiKey: "AIzaSyDOKOZcdMJ6En37-2OegKaPnKo_3jcIENc",
-    authDomain: "rt511-kviz.firebaseapp.com",
-    databaseURL: "https://rt511-kviz-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "rt511-kviz",
-    storageBucket: "rt511-kviz.firebasestorage.app",
-    messagingSenderId: "350597030844",
-    appId: "1:350597030844:web:fb817ce2954ae11538c1b9"
-  },
-  */
-  joinBaseURL: ""   /* neobavezno: adresa stranice za QR kod, ako se razlikuje od adrese ove stranice */
-};
-</script>
+<script src="config.js"></script>
+<script>window.KVIZ_CONFIG = window.KVIZ_CONFIG || {firebase: null, joinBaseURL: ""};</script>
 </head>
 <body>
 <div id="app"></div>
@@ -386,7 +371,7 @@ function loadScript(src) {
 let DB = null, UID = null, FB = null;
 
 async function boot() {
-  const fbcfg = CFG.firebase && CFG.firebase.apiKey && CFG.firebase.databaseURL ? CFG.firebase : null;
+  const fbcfg = CFG.firebase && CFG.firebase.apiKey && CFG.firebase.apiKey !== "UPIŠITE" && CFG.firebase.databaseURL ? CFG.firebase : null;
   if (fbcfg) {
     try {
       const v = '10.12.2';
@@ -844,6 +829,7 @@ const Live = {
         <div style="display:grid;gap:22px;align-content:start;min-width:0">
           <div><p class="label">Kod kviza</p><div class="bigcode">${this.code.slice(0, 3)} ${this.code.slice(3)}</div></div>
           <div class="note" style="font-size:1.05rem"><b>Računalo:</b> otvorite <span class="mono" style="word-break:break-all">${esc(base || 'adresu ove stranice s #igraj na kraju')}</span> i upišite kod.</div>
+          ${DB.mode === 'demo' && base && !/\/\/(localhost|127\.)/.test(base) ? `<div class="note warn"><b>Demo način:</b> stranica nije povezana s Firebaseom (nema postavki u config.js), pa se natjecatelji s drugih uređaja ne mogu prijaviti.</div>` : ''}
           <div class="counter"><span class="n" id="pcount2">${this.pcount()}</span><span class="muted" style="font-size:1.2rem;font-weight:700">prijavljenih natjecatelja</span></div>
           <div><button class="btn go lg" id="start-btn" ${this.pcount() ? '' : 'disabled'}>${I.play} Započni kviz</button></div>
           <div class="chips" id="pchips"></div></div></div>`;
@@ -1039,8 +1025,13 @@ const Player = {
   },
   async enter(code) {
     this.code = code;
-    this.meta = await DB.get('games/' + code + '/meta').catch(() => null);
-    if (!this.meta) { sset(sessionStorage, 'pv-code', ''); this.meta = null; this.askCode('Kviz s kodom ' + code + ' ne postoji.'); return; }
+    if (DB.mode === 'demo' && /^https?:/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname)) {
+      this.shell(`<div class="card"><h2>Stranica nije povezana s bazom</h2><p>Ova stranica radi u demo načinu jer u datoteci <b>config.js</b> nisu upisane Firebase postavke, pa ne vidi kvizove pokrenute na računalu nastavnika.</p><p class="faint">Kod kviza: ${esc(code)}</p></div>`); return;
+    }
+    let err = null;
+    this.meta = await DB.get('games/' + code + '/meta').catch(e => { err = e; return null; });
+    if (err) { this.shell(`<div class="card"><h2>Baza je odbila pristup</h2><p>Kviz se ne može pročitati. Nastavnik treba provjeriti jesu li u Firebaseu objavljena pravila iz <b>database.rules.json</b> i je li uključena prijava <b>Anonymous</b>.</p><p class="faint mono" style="font-size:.85rem">${esc(err.code || '')} ${esc(err.message || '')}</p></div>`); return; }
+    if (!this.meta) { sset(sessionStorage, 'pv-code', ''); this.meta = null; this.askCode('Kviz s kodom ' + code + ' ne postoji. Provjerite kod na projektoru.'); return; }
     sset(sessionStorage, 'pv-code', code);
     this.me = await DB.get(`games/${code}/players/${UID}`).catch(() => null);
     const st = await DB.get(`games/${code}/state`).catch(() => null);
