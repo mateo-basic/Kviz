@@ -304,6 +304,10 @@ img{max-width:100%;height:auto}
 [hidden]{display:none!important}
 .qcard .meta{flex-wrap:wrap;gap:.2rem .8rem}.qcard .meta span{white-space:nowrap}
 .rail-search{padding:14px 14px 0}.rail-search .input{background:var(--surface)}
+.pl .abtn:has(.aimg){flex-direction:column;align-items:stretch;gap:10px;padding:12px}
+.pl .abtn:has(.aimg) .L{align-self:flex-start}
+.pl .abtn:has(.aimg) .abody{justify-items:stretch}
+.pl .abtn:has(.aimg) .aimg img{max-height:none;width:100%}
 
 </style>
 <script src="config.js"></script>
@@ -465,7 +469,7 @@ async function boot() {
    ============================================================ */
 const fmtP = n => (Math.round((n || 0) * 100) / 100).toLocaleString('hr-HR');
 const fmtS = ms => ((ms || 0) / 1000).toLocaleString('hr-HR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
-function newQuestion() { return {id: rid(8), text: '', image: null, answers: ['', '', '', ''], aimg: [false, false, false, false], correct: 0}; }
+function newQuestion() { return {id: rid(8), text: '', image: null, answers: ['', '', '', ''], aimg: [false, false, false, false], correct: 0, time: 0}; }
 /* pomoćne funkcije za ponuđene odgovore: tekst i/ili slika */
 const arr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.keys(v).sort((a, b) => a - b).map(k => v[k]) : []);
 const aImg = (q, i) => { const v = arr(q.aimg)[i]; return typeof v === 'string' && v ? v : null; };
@@ -479,7 +483,7 @@ function newQuiz() {
 function normQuiz(q) {
   const o = Object.assign(newQuiz(), q || {});
   o.questions = (Array.isArray(o.questions) ? o.questions : Object.values(o.questions || {})).map(x => {
-    const n = Object.assign(newQuestion(), x || {});
+    const n = Object.assign(newQuestion(), x || {}); n.time = Math.max(0, Math.floor(Number(n.time) || 0));
     let ans = Array.isArray(n.answers) ? n.answers : Object.values(n.answers || {});
     if (ans.length && typeof ans[0] === 'object') { const ci = ans.findIndex(a => a && a.correct); n.correct = ci < 0 ? 0 : ci; ans = ans.map(a => (a && a.text) || ''); }
     n.answers = ans.map(a => String(a || ''));
@@ -818,8 +822,10 @@ const Editor = {
               <button class="icon-btn" data-aimg="${i}" title="${aImg(x, i) ? 'Zamijeni sliku' : 'Dodaj sliku'}" aria-label="Slika za odgovor ${LET[i]}">${I.img}</button></div>
             <button class="icon-btn" data-adel="${i}" aria-label="Obriši odgovor ${LET[i]}" ${x.answers.length <= 2 ? 'disabled' : ''}>${I.trash}</button></div>`).join('')}</div>
           ${x.answers.length < 6 ? `<button class="btn ghost sm" id="add-a" style="justify-self:start">${I.plus} Dodaj odgovor</button>` : ''}<input type="file" id="fi-a" accept="image/*" hidden>
+          <div class="row"><label class="field" style="flex:0 1 280px"><span>Vrijeme za ovo pitanje, s</span><input class="input" type="number" min="5" max="600" step="1" id="q-time" value="${x.time || ''}" placeholder="zadano (${this.q.qTime} s)"></label></div>
           <p class="err" id="q-err">${prob.map(esc).join(' · ')}</p>
         </div>`;
+      const qt = $('#q-time'); qt.oninput = () => { const v = Math.floor(Number(qt.value) || 0); x.time = v >= 5 ? v : 0; this.mark(); };
       const t = $('#q-text');
       t.oninput = () => { x.text = t.value; $('#c-qt').textContent = t.value.length + '/300'; $('#ph-t').textContent = (this.qi + 1) + '. ' + (t.value || 'Novo pitanje'); this.mark(); this.status(); };
       $$('[data-at]', p).forEach(inp => inp.oninput = () => { x.answers[+inp.dataset.at] = inp.value; this.mark(); this.status(); });
@@ -901,7 +907,7 @@ const Live = {
     let qs = quiz.questions.map(x => {
       const list = x.answers.map((t, i) => ({t: t.trim(), im: aImg(x, i) || false, ok: i === x.correct})).filter(a => a.t || a.im);
       const labels = x.answers.map((t, i) => ({ok: !!(t.trim() || aImg(x, i)), l: aLabel(x, i)})).filter(a => a.ok).map(a => a.l);
-      return {qid: x.id, cat: x.cat || '', text: x.text.trim(), image: x.image || null, answers: list.map(a => a.t), aimg: list.map(a => a.im), labels, correct: Math.max(0, list.findIndex(a => a.ok))};
+      return {qid: x.id, cat: x.cat || '', time: x.time >= 5 ? x.time : 0, text: x.text.trim(), image: x.image || null, answers: list.map(a => a.t), aimg: list.map(a => a.im), labels, correct: Math.max(0, list.findIndex(a => a.ok))};
     });
     if (quiz.drawN > 0 && quiz.drawN < qs.length) qs = shuffle(qs).slice(0, quiz.drawN);
     const meta = {title: quiz.title, quizId: quiz.id, createdAt: DB.TS, host: UID, total: qs.length, shuffleA: !!quiz.shuffleA, lockJoin: !!quiz.lockJoin};
@@ -1050,7 +1056,7 @@ const Live = {
   },
   async showQ(i) {
     const q = this.secret.questions[i];
-    await DB.set(`games/${this.code}/state`, {phase: 'question', qi: i, qk: String(i), total: this.secret.questions.length, at: DB.TS, time: this.S.qTime,
+    await DB.set(`games/${this.code}/state`, {phase: 'question', qi: i, qk: String(i), total: this.secret.questions.length, at: DB.TS, time: q.time || this.S.qTime,
       q: {cat: q.cat || '', text: q.text, image: q.image || null, answers: q.answers, aimg: q.aimg && q.aimg.length ? q.aimg : false}});
   },
   tick() {
@@ -1157,7 +1163,7 @@ const Live = {
       ...rows.map(r => [r.rank, r.prezime, r.ime, ...r.per.flatMap((p, i) => [p.c === null ? '' : aLabel(qs[i], p.c), p.c === null ? '' : (p.ok ? 1 : 0), p.ms === null ? '' : Math.round(p.ms / 100) / 10])])];
     const qsh = [['Pitanje', 'Tekst', 'Točan odgovor', 'Točno odgovorilo', 'Udio točnih (%)'],
       ...qs.map((q, i) => { const k = rows.filter(r => r.per[i].ok).length; return [i + 1, q.text, aLabel(q, q.correct), k, rows.length ? Math.round(100 * k / rows.length) : 0]; })];
-    const info = [['Kviz', this.meta.title], ['Kod', this.code], ['Datum izvještaja', d], ['Bodova za točan odgovor', this.S.points], ['Vrijeme za odgovor (s)', this.S.qTime], ['Bonus za 1. mjesto', this.S.bonusOn ? this.S.bonus : 0], ['Pravilo poretka', 'Više točnih odgovora; pri jednakom broju kraće ukupno vrijeme točnih odgovora.']];
+    const info = [['Kviz', this.meta.title], ['Kod', this.code], ['Datum izvještaja', d], ['Bodova za točan odgovor', this.S.points], ['Zadano vrijeme za odgovor (s)', this.S.qTime], ['Bonus za 1. mjesto', this.S.bonusOn ? this.S.bonus : 0], ['Pravilo poretka', 'Više točnih odgovora; pri jednakom broju kraće ukupno vrijeme točnih odgovora.']];
     const fname = `Rezultati_${(this.meta.title || 'kviz').replace(/[^\wčćžšđČĆŽŠĐ\-]+/g, '_').slice(0, 60)}_${this.code}`;
     if (window.XLSX) {
       const X = window.XLSX; const wb = X.utils.book_new();
