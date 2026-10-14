@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Kvizovi</title>
+<title>Povratna veza</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 /* Layout: app shell with top bar; editor = left rail + work panel + sticky action bar; live = projector stage. */
@@ -309,6 +309,13 @@ img{max-width:100%;height:auto}
 .pl .abtn:has(.aimg) .abody{justify-items:stretch}
 .pl .abtn:has(.aimg) .aimg img{max-height:none;width:100%}
 
+.qcard .body{position:relative}
+.qcard .drag{position:absolute;top:10px;right:10px;color:var(--ink-3);cursor:grab;padding:4px 6px;border-radius:6px;line-height:0}
+.qcard .drag:hover{background:var(--sunk);color:var(--ink-2)}
+.qcard .body h3{padding-right:28px}
+.qcard.dragging{opacity:.45;outline:2px dashed var(--accent,#2b50d8);outline-offset:2px}
+@media (hover:none){.qcard .drag{display:none}}
+
 </style>
 <script src="config.js"></script>
 <script>window.KVIZ_CONFIG = window.KVIZ_CONFIG || {firebase: null, joinBaseURL: ""};</script>
@@ -321,7 +328,7 @@ img{max-width:100%;height:auto}
 (function(){
 "use strict";
 /* ============================================================
-   Kvizovi uživo za predavanja i vježbe
+   Povratna veza — kviz uživo za predavanja
    Nastavnička konzola + studentska stranica u jednoj datoteci.
    Pozadina: Firebase Realtime Database (kad je KVIZ_CONFIG.firebase
    popunjen) ili lokalni demo način (localStorage, sve kartice istog
@@ -329,6 +336,8 @@ img{max-width:100%;height:auto}
    ============================================================ */
 
 const CFG = window.KVIZ_CONFIG || {};
+const APP_NAME = (CFG.naziv && String(CFG.naziv).trim()) || 'Povratna veza';
+try { document.title = APP_NAME; } catch (_) {}
 const params = new URLSearchParams(location.search);
 const HAS_FB = !!(CFG.firebase && CFG.firebase.apiKey && CFG.firebase.apiKey !== 'UPIŠITE' && CFG.firebase.databaseURL);
 /* Gola adresa = stranica za natjecatelje (upis koda). Nastavnik ulazi preko ?nastavnik.
@@ -471,6 +480,7 @@ const fmtP = n => (Math.round((n || 0) * 100) / 100).toLocaleString('hr-HR');
 const fmtS = ms => ((ms || 0) / 1000).toLocaleString('hr-HR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
 function newQuestion() { return {id: rid(8), text: '', image: null, answers: ['', '', '', ''], aimg: [false, false, false, false], correct: 0, time: 0}; }
 /* pomoćne funkcije za ponuđene odgovore: tekst i/ili slika */
+const ordCmp = (a, b) => { const ha = typeof a.ord === 'number', hb = typeof b.ord === 'number'; if (ha && hb) return a.ord - b.ord || (b.updatedAt || 0) - (a.updatedAt || 0); if (ha !== hb) return ha ? 1 : -1; return (b.updatedAt || 0) - (a.updatedAt || 0); };
 const arr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.keys(v).sort((a, b) => a - b).map(k => v[k]) : []);
 const aImg = (q, i) => { const v = arr(q.aimg)[i]; return typeof v === 'string' && v ? v : null; };
 const aFilled = (q, i) => !!((q.answers[i] || '').trim() || aImg(q, i));
@@ -537,7 +547,7 @@ const Host = {
     }
   },
   topbar(right = '') {
-    return `<header class="topbar"><div class="brand" data-go="home">${LOGO}<span>Kvizovi</span></div>
+    return `<header class="topbar"><div class="brand" data-go="home">${LOGO}<span>${esc(APP_NAME)}</span></div>
       ${DB.mode === 'demo' ? '<span class="mode-chip" title="Podaci se čuvaju samo u ovom pregledniku">Demo način</span>' : ''}
       <div class="sp"></div>${right}
       ${DB.mode === 'firebase' ? '<button class="btn ghost sm" data-act="logout">Odjava</button>' : ''}</header>`;
@@ -602,7 +612,7 @@ const Host = {
     $('#imp').onchange = e => {
       const f = e.target.files[0]; if (!f) return;
       const rd = new FileReader();
-      rd.onload = async () => { try { const q = normQuiz(JSON.parse(rd.result)); q.id = rid(10); q.updatedAt = Date.now(); if (this.curFolder()) q.folder = this.curFolder(); await DB.set('quizzes/' + q.id, q); toast('Kviz uvezen'); } catch (err) { toast('Datoteka nije ispravan kviz (JSON).'); } };
+      rd.onload = async () => { try { const q = normQuiz(JSON.parse(rd.result)); q.id = rid(10); q.updatedAt = Date.now(); delete q.ord; if (this.curFolder()) q.folder = this.curFolder(); await DB.set('quizzes/' + q.id, q); toast('Kviz uvezen'); } catch (err) { toast('Datoteka nije ispravan kviz (JSON).'); } };
       rd.readAsText(f);
     };
     this.unsubs.push(DB.on('quizzes', v => { this.quizzes = v || {}; this.renderTabs(); this.renderGrid(); this.renderHist(); }));
@@ -658,14 +668,14 @@ const Host = {
   renderGrid() {
     const g = $('#qgrid'); if (!g) return;
     const all = Object.values(this.quizzes).map(normQuiz);
-    const list = all.filter(q => this.inFolder(q.folder.trim())).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const list = all.filter(q => this.inFolder(q.folder.trim())).sort(ordCmp);
     if (!all.length) { g.innerHTML = `<div class="empty" style="grid-column:1/-1">Još nemate kvizova. Kliknite <b>Novi kviz</b>.</div>`; return; }
     if (!list.length) { g.innerHTML = `<div class="empty" style="grid-column:1/-1">U predmetu <b>${esc(this.curFolder() || '')}</b> još nema kvizova. Kliknite <b>Novi kviz</b>, ili kviz premjestite ovamo u njegovim postavkama (polje <i>Predmet</i>).</div>`; return; }
     g.innerHTML = list.map(q => {
       const bad = quizProblems(q).length || q.questions.some(x => qProblems(x).length);
       const n = q.questions.length;
       return `<article class="qcard" data-id="${esc(q.id)}">
-        <div class="body">${this.folder === '*' && q.folder ? `<span class="fchip">${esc(q.folder)}</span>` : ''}<h3>${esc(q.title || 'Bez naslova')}</h3>
+        <div class="body"><span class="drag" title="Povucite mišem za promjenu redoslijeda" aria-hidden="true"><svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor"><circle cx="4" cy="4" r="1.7"/><circle cx="10" cy="4" r="1.7"/><circle cx="4" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="4" cy="16" r="1.7"/><circle cx="10" cy="16" r="1.7"/></svg></span>${this.folder === '*' && q.folder ? `<span class="fchip">${esc(q.folder)}</span>` : ''}<h3>${esc(q.title || 'Bez naslova')}</h3>
           <div class="meta"><span>${q.drawN > 0 && q.drawN < n ? `${q.drawN} od ${n} pitanja` : `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'pitanje' : 'pitanja'}`}</span><span>${q.qTime} s</span><span>${fmtP(q.points)} b/točan</span>${bad ? '<span style="color:var(--warn);font-weight:700">nepotpun</span>' : ''}</div>
           <div class="acts">
             <button class="btn go sm" data-a="run" ${bad ? 'disabled title="Dovršite kviz prije pokretanja"' : ''}>${I.play} Pokreni</button>
@@ -683,13 +693,38 @@ const Host = {
       if (a === 'edit') Editor.open(q, false);
       else if (a === 'run') Live.create(q);
       else if (a === 'stats') Stats.open(q, this.history);
-      else if (a === 'dup') { const c = clone(q); c.id = rid(10); c.title = (q.title || 'Kviz') + ' (kopija)'; c.updatedAt = Date.now(); await DB.set('quizzes/' + c.id, c); toast('Kopija izrađena'); }
+      else if (a === 'dup') { const c = clone(q); c.id = rid(10); c.title = (q.title || 'Kviz') + ' (kopija)'; c.updatedAt = Date.now(); delete c.ord; await DB.set('quizzes/' + c.id, c); toast('Kopija izrađena'); }
       else if (a === 'exp') download((q.title || 'kviz').replace(/[^\w\-]+/g, '_') + '.json', JSON.stringify(q, null, 2), 'application/json');
       else if (a === 'del') {
         if (b.dataset.confirm) { await DB.remove('quizzes/' + id); toast('Kviz obrisan'); }
         else { b.dataset.confirm = '1'; b.innerHTML = '<span style="font-size:.8rem;font-weight:700;color:var(--bad)">Potvrdi</span>'; setTimeout(() => { if (b.isConnected) { delete b.dataset.confirm; b.innerHTML = I.trash; } }, 3500); }
       }
     };
+    this.dragSort(g);
+  },
+  dragSort(g) {
+    let drag = null;
+    g.querySelectorAll('.qcard').forEach(c => {
+      const h = c.querySelector('.drag');
+      h.onmousedown = () => { c.draggable = true; };
+      c.ondragstart = e => { drag = c; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', c.dataset.id); } catch (_) {} };
+      c.ondragend = async () => {
+        c.draggable = false; c.classList.remove('dragging'); if (!drag) return; drag = null;
+        const ids = [...g.querySelectorAll('.qcard')].map(x => x.dataset.id);
+        const ch = ids.filter((id, i) => !this.quizzes[id] || this.quizzes[id].ord !== i);
+        if (!ch.length) return;
+        try { for (const id of ch) { const i = ids.indexOf(id); if (this.quizzes[id]) this.quizzes[id].ord = i; await DB.update('quizzes/' + id, {ord: i}); } toast('Redoslijed spremljen'); }
+        catch (err) { toast('Redoslijed nije spremljen: ' + err.message); this.renderGrid(); }
+      };
+    });
+    g.ondragover = e => {
+      if (!drag) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      const t = e.target.closest('.qcard'); if (!t || t === drag) return;
+      const r = t.getBoundingClientRect(); const sameRow = Math.abs(r.top - drag.getBoundingClientRect().top) < r.height / 2;
+      const after = sameRow ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2;
+      g.insertBefore(drag, after ? t.nextSibling : t);
+    };
+    g.ondrop = e => { if (drag) e.preventDefault(); };
   },
   renderHist() {
     const h = $('#hist'); if (!h) return;
@@ -1249,7 +1284,7 @@ const Player = {
     if (code && code.length === 6) this.enter(code); else this.askCode();
   },
   shell(inner, top = '') {
-    app.innerHTML = `<div class="pl"><header class="pl-top"><div class="brand" style="min-width:0">${LOGO}<span style="overflow:hidden;text-overflow:ellipsis">${esc(this.meta ? this.meta.title : 'Kvizovi')}</span></div><div class="sp"></div>${top}</header><main class="pl-main" id="pm">${inner}</main></div>`;
+    app.innerHTML = `<div class="pl"><header class="pl-top"><div class="brand" style="min-width:0">${LOGO}<span style="overflow:hidden;text-overflow:ellipsis">${esc(this.meta ? this.meta.title : APP_NAME)}</span></div><div class="sp"></div>${top}</header><main class="pl-main" id="pm">${inner}</main></div>`;
   },
   askCode(msg) {
     this.shell(`<form class="card" id="cf"><h1>Ulaz u kviz</h1><label class="field"><span>Kod kviza (6 znamenki)</span><input class="input mono" id="cf-code" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="123 456" style="font-size:1.6rem;letter-spacing:.15em;text-align:center"></label>
