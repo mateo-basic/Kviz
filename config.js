@@ -10,6 +10,6 @@ window.KVIZ_CONFIG = {
     projectId: "rt511-kviz",
     appId: "1:350597030844:web:fb817ce2954ae11538c1b9"
   },
-  joinBaseURL: ""
+  joinBaseURL: "",
   naziv: "Kvizovi"
 };
