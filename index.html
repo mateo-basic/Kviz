@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Povratna veza</title>
+<title>Kvizovi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 /* Layout: app shell with top bar; editor = left rail + work panel + sticky action bar; live = projector stage. */
@@ -321,7 +321,7 @@ img{max-width:100%;height:auto}
 (function(){
 "use strict";
 /* ============================================================
-   Povratna veza — kviz uživo za predavanja
+   Kvizovi uživo za predavanja i vježbe
    Nastavnička konzola + studentska stranica u jednoj datoteci.
    Pozadina: Firebase Realtime Database (kad je KVIZ_CONFIG.firebase
    popunjen) ili lokalni demo način (localStorage, sve kartice istog
@@ -537,7 +537,7 @@ const Host = {
     }
   },
   topbar(right = '') {
-    return `<header class="topbar"><div class="brand" data-go="home">${LOGO}<span>Povratna veza</span></div>
+    return `<header class="topbar"><div class="brand" data-go="home">${LOGO}<span>Kvizovi</span></div>
       ${DB.mode === 'demo' ? '<span class="mode-chip" title="Podaci se čuvaju samo u ovom pregledniku">Demo način</span>' : ''}
       <div class="sp"></div>${right}
       ${DB.mode === 'firebase' ? '<button class="btn ghost sm" data-act="logout">Odjava</button>' : ''}</header>`;
@@ -1249,7 +1249,7 @@ const Player = {
     if (code && code.length === 6) this.enter(code); else this.askCode();
   },
   shell(inner, top = '') {
-    app.innerHTML = `<div class="pl"><header class="pl-top"><div class="brand" style="min-width:0">${LOGO}<span style="overflow:hidden;text-overflow:ellipsis">${esc(this.meta ? this.meta.title : 'Povratna veza')}</span></div><div class="sp"></div>${top}</header><main class="pl-main" id="pm">${inner}</main></div>`;
+    app.innerHTML = `<div class="pl"><header class="pl-top"><div class="brand" style="min-width:0">${LOGO}<span style="overflow:hidden;text-overflow:ellipsis">${esc(this.meta ? this.meta.title : 'Kvizovi')}</span></div><div class="sp"></div>${top}</header><main class="pl-main" id="pm">${inner}</main></div>`;
   },
   askCode(msg) {
     this.shell(`<form class="card" id="cf"><h1>Ulaz u kviz</h1><label class="field"><span>Kod kviza (6 znamenki)</span><input class="input mono" id="cf-code" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="123 456" style="font-size:1.6rem;letter-spacing:.15em;text-align:center"></label>
